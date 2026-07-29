@@ -103,7 +103,7 @@ button,input,select,textarea{font:inherit}
 .big-price{font-size:30px;font-weight:950;color:var(--orange);margin:10px 0}
 .price-card ul{padding-left:18px;color:var(--muted);line-height:1.8}
 
-.calc-box{max-width:720px;margin:auto;padding:28px}
+.calc-box{max-width:800px;margin:auto;padding:28px}
 .calc-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .calc-row{display:grid;grid-template-columns:1fr 180px;gap:14px;align-items:center;padding:15px;background:#fff7e8;border-radius:16px}
 .calc-row label{font-weight:900}
@@ -349,7 +349,7 @@ button,input,select,textarea{font:inherit}
 }
 
 /* 작은 입력형 카드는 기존 폭 유지 */
-#calculator .calc-box{max-width:880px}
+#calculator .calc-box{max-width:800px}
 #apply .apply-panel{max-width:800px}
 
 /* 모바일 */
@@ -1007,78 +1007,6 @@ button,input,select,textarea{font:inherit}
 </style>
 
 
-<style>
-/* 모바일에서 견적 계산기 이후 콘텐츠가 잘리는 현상 방지 */
-@media (max-width:700px){
-  html,body,main,
-  #calculator,
-  #calculator .wrapper,
-  #calculator .calc-box{
-    height:auto!important;
-    max-height:none!important;
-    overflow:visible!important;
-  }
-  #calculator{
-    contain:none!important;
-  }
-}
-</style>
-
-
-<style>
-/* 모바일 견적 계산기 전체 항목 강제 표시 */
-@media (max-width:700px){
-  #calculator .panel.calc-box,
-  #calculator .calc-grid{
-    display:block!important;
-    height:auto!important;
-    min-height:0!important;
-    max-height:none!important;
-    overflow:visible!important;
-    visibility:visible!important;
-    opacity:1!important;
-  }
-
-  #calculator .calc-grid > .calc-row,
-  #calculator .calc-grid > .calc-note,
-  #calculator .calc-grid > .total-bar{
-    display:grid!important;
-    position:relative!important;
-    visibility:visible!important;
-    opacity:1!important;
-    transform:none!important;
-    height:auto!important;
-    min-height:0!important;
-    max-height:none!important;
-    overflow:visible!important;
-    margin-top:14px!important;
-  }
-
-  #calculator .calc-grid > .calc-row:first-child{
-    margin-top:0!important;
-  }
-
-  #calculator .calc-grid > .calc-note{
-    display:block!important;
-  }
-
-  #calculator .calc-grid > .total-bar{
-    grid-template-columns:1fr!important;
-  }
-
-  #calculator .calc-grid > .breakdown{
-    position:relative!important;
-    height:auto!important;
-    max-height:none!important;
-    overflow:visible!important;
-  }
-
-  #calculator .calc-row{
-    grid-template-columns:1fr!important;
-  }
-}
-</style>
-
 </head>
 <body>
 <nav class="floating-nav">
@@ -1390,11 +1318,6 @@ button,input,select,textarea{font:inherit}
 </section>
 </main>
 <div class="modal" id="modal"><img alt="" id="modalImg"></div>
-<footer class="footer">© </footer>
-
-
-
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const schedulePanelElement=document.getElementById('schedulePanel');
@@ -2362,49 +2285,24 @@ document.addEventListener("click", function (event) {
 </script>
 
 
-<script>
-/* 아트머그 모바일 웹뷰에서 계산기 하단 항목이 숨는 현상 보정 */
-(function(){
-  function restoreCalculator(){
-    var grid=document.querySelector('#calculator .calc-grid');
-    if(!grid) return;
-
-    grid.style.setProperty('display','block','important');
-    grid.style.setProperty('height','auto','important');
-    grid.style.setProperty('max-height','none','important');
-    grid.style.setProperty('overflow','visible','important');
-
-    Array.from(grid.children).forEach(function(el,index){
-      if(el.classList.contains('breakdown') && !el.classList.contains('show')){
-        return;
-      }
-
-      var display='block';
-      if(el.classList.contains('calc-row') || el.classList.contains('total-bar')){
-        display='grid';
-      }
-
-      el.style.setProperty('display',display,'important');
-      el.style.setProperty('visibility','visible','important');
-      el.style.setProperty('opacity','1','important');
-      el.style.setProperty('height','auto','important');
-      el.style.setProperty('max-height','none','important');
-      el.style.setProperty('overflow','visible','important');
-
-      if(index>0 && !el.classList.contains('breakdown')){
-        el.style.setProperty('margin-top','14px','important');
-      }
-    });
-
-    window.dispatchEvent(new Event('resize'));
-  }
-
-  window.addEventListener('load',restoreCalculator);
-  document.addEventListener('DOMContentLoaded',restoreCalculator);
-  [0,150,500,1200,2500].forEach(function(delay){
-    setTimeout(restoreCalculator,delay);
-  });
-})();
-</script>
-
 </body></html>
+<style>
+/* final layout cleanup */
+#calculator .calc-box,
+#apply .apply-panel{
+  width:100%;
+  max-width:800px;
+}
+#apply{
+  padding-bottom:24px;
+}
+@media(max-width:560px){
+  #calculator .calc-box,
+  #apply .apply-panel{
+    max-width:100%;
+  }
+  #apply{
+    padding-bottom:16px;
+  }
+}
+</style>
