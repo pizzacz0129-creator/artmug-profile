@@ -1007,19 +1007,41 @@ button,input,select,textarea{font:inherit}
 </style>
 
 
+
 <style>
+/* v47 mobile apply-form compression */
 @media (max-width:900px){
-.section{padding:34px 0!important}
-.section-head{margin-bottom:18px!important}
-.hero{padding:22px 0!important;min-height:auto!important}
-.hero-card{padding:28px 18px!important}
-.hero h1{margin:8px 0 12px!important;line-height:1.12!important}
-.actions{margin-top:18px!important;gap:8px!important}
-.panel-pad,.calc-box,.calendar-panel,.consult-panel,.apply-panel{padding:16px!important}
-.process-item,.consult-card,.guide-item,.price-card{padding:14px!important}
-.portfolio-grid,.price-grid,.consult-top,.process-list{gap:10px!important}
-.calc-row{padding:10px!important}
-.subtitle-wrap{gap:12px!important;padding:16px!important}
+  #apply.section{padding:26px 0!important;}
+  #apply .apply-panel{
+    padding:14px!important;
+    max-width:100%!important;
+  }
+  #apply .apply-grid{
+    gap:8px!important;
+  }
+  #apply .field{
+    padding:9px 11px!important;
+    min-height:38px!important;
+  }
+  #apply textarea.field,
+  #apply textarea{
+    min-height:88px!important;
+    padding:10px 11px!important;
+  }
+  #apply .field-help{
+    font-size:11px!important;
+    margin-top:4px!important;
+    line-height:1.35!important;
+  }
+  #apply .btn,
+  #apply button{
+    padding:11px 16px!important;
+  }
+
+  /* calculator compact */
+  #calculator.section{padding-bottom:20px!important;}
+  #calculator .calc-box{padding:14px!important;}
+  #calculator .calc-row{padding:8px!important;}
 }
 </style>
 </head>
