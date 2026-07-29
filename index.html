@@ -147,14 +147,14 @@ button,input,select,textarea{font:inherit}
 .guide-item h3{margin:0 0 5px}
 .guide-item p{margin:0;color:var(--muted);line-height:1.7}
 
-.apply-panel{max-width:800px;margin:auto;padding:30px}
+.apply-panel{max-width:800px;margin:auto;padding:22px}
 .apply-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.apply-grid textarea{grid-column:1/-1;min-height:130px;resize:vertical}
+.apply-grid textarea{grid-column:1/-1;min-height:88px;resize:vertical}
 .full{grid-column:1/-1}
-.short-area{min-height:92px!important}
+.short-area{min-height:64px!important}
 .conditional-field{display:none}
 .conditional-field.show{display:block}
-.field-help{margin-top:7px;padding-left:4px;color:var(--muted);font-size:12px;line-height:1.55}
+.field-help{margin-top:3px;padding-left:2px;color:var(--muted);font-size:11px;line-height:1.3}
 .copy-note{display:none;text-align:center;margin-top:14px;padding:11px;background:#e8f7ec;color:#2a6e3d;border-radius:12px;font-weight:800}
 .copy-note.show{display:block}
 
@@ -958,7 +958,7 @@ button,input,select,textarea{font:inherit}
   #guide .section-head h2{
     max-width:none;
     width:100%;
-    font-size:clamp(25px,8vw,31px);
+    font-size:clamp(24px,7.4vw,29px);
     line-height:1.28;
     letter-spacing:-.065em;
     word-break:keep-all;
@@ -1020,46 +1020,6 @@ button,input,select,textarea{font:inherit}
 .portfolio-grid,.price-grid,.consult-top,.process-list{gap:10px!important}
 .calc-row{padding:10px!important}
 .subtitle-wrap{gap:12px!important;padding:16px!important}
-}
-</style>
-
-<style>
-/* v51: Artmug iframe 폭 기준 신청 양식 전용 압축 */
-@media (max-width:900px){
-  #apply .apply-panel{
-    padding:12px!important;
-  }
-  #apply .apply-grid{
-    gap:7px!important;
-  }
-  #apply input.field,
-  #apply select.field,
-  #apply button.field{
-    padding:9px 10px!important;
-  }
-  #apply textarea.field,
-  #apply textarea.short-area,
-  #apply .apply-grid textarea{
-    min-height:64px!important;
-    height:64px!important;
-    padding:9px 10px!important;
-    resize:none!important;
-  }
-  #apply .field-help{
-    margin-top:2px!important;
-    padding-left:2px!important;
-    font-size:11px!important;
-    line-height:1.25!important;
-  }
-  #apply .btn,
-  #apply button:not(.minute-option){
-    padding-top:10px!important;
-    padding-bottom:10px!important;
-  }
-  #apply .copy-note{
-    margin-top:7px!important;
-    padding:8px!important;
-  }
 }
 </style>
 </head>
