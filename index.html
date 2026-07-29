@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v32</title>
+<title>VTuber 영상 편집</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -159,7 +159,7 @@ button,input,select,textarea{font:inherit}
 
 .footer{text-align:center;color:var(--muted);padding:45px 20px 90px}
 
-@media(max-width:1250px){.floating-nav{display:none}}
+@media(max-width:900px){.floating-nav{display:none}}
 @media(max-width:900px){
   .subtitle-wrap,.price-grid,.portfolio-grid,.calc-grid,.consult-top,.apply-grid{grid-template-columns:1fr}
   .calc-row{grid-template-columns:1fr}
@@ -730,6 +730,41 @@ button,input,select,textarea{font:inherit}
     width:min(var(--content-wide),calc(100% - 24px));
   }
 }
+
+
+/* Artmug iframe final adjustments */
+.footer{display:none!important}
+@media (min-width:901px) and (max-width:1250px){
+  body{padding-right:144px}
+  .floating-nav{
+    display:grid;
+    right:8px;
+    width:128px;
+    gap:7px;
+  }
+  .floating-nav .nav-btn{
+    min-height:42px;
+    padding:10px 8px;
+    border-radius:13px;
+    font-size:12px;
+    line-height:1.25;
+  }
+  .floating-nav .nav-btn.top{min-height:40px}
+  .wrapper,
+  #portfolio .wrapper,
+  #comments .wrapper,
+  #subtitles .wrapper,
+  #process .wrapper,
+  #price .wrapper,
+  #schedule .wrapper,
+  #guide .wrapper,
+  #calculator .wrapper,
+  #apply .wrapper{
+    width:min(980px,calc(100% - 24px));
+  }
+  .hero-card{width:min(860px,100%)}
+}
+
 </style>
 </head>
 <body>
@@ -898,7 +933,6 @@ button,input,select,textarea{font:inherit}
 </div>
 </section></main>
 <div class="modal" id="modal"><img alt="" id="modalImg"/></div>
-<footer class="footer">© VTuber Video Editor · 아트머그 임베드 시안 v8</footer>
 <script>
 const money=n=>new Intl.NumberFormat('ko-KR').format(n)+'원';
 
