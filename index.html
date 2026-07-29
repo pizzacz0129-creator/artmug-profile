@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v44</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v45</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -732,99 +732,122 @@ button,input,select,textarea{font:inherit}
 </style>
 
 <style>
-/* v44 schedule editor */
-.schedule-editor-bar{
+/* v45 클릭형 일정 관리 */
+.calendar-panel{position:relative}
+.schedule-toolbar{
   display:flex;
   justify-content:flex-end;
   gap:8px;
-  margin:0 0 14px;
+  margin-bottom:16px;
   flex-wrap:wrap;
 }
-.schedule-edit-btn{
+.schedule-tool{
   border:1px solid #e5c493;
   background:#fff;
   color:#6e431d;
   border-radius:11px;
-  padding:9px 13px;
+  padding:10px 14px;
   font-size:13px;
   font-weight:900;
   cursor:pointer;
 }
-.schedule-edit-btn.primary{
+.schedule-tool:hover{background:#fff7e8}
+.schedule-tool.active,
+.schedule-tool.save{
   background:var(--orange);
   border-color:var(--orange);
   color:#fff;
 }
-.schedule-editor-note{
+.schedule-tool[hidden]{display:none!important}
+.schedule-help{
   display:none;
-  margin:0 0 14px;
-  padding:11px 14px;
-  border-radius:12px;
-  background:#fff7e8;
+  margin:-4px 0 16px;
+  padding:12px 14px;
   border:1px solid #ead5b2;
-  color:#765b43;
+  border-radius:13px;
+  background:#fff7e8;
+  color:#765f4b;
   font-size:13px;
-  line-height:1.55;
+  line-height:1.6;
 }
-.calendar-panel.editing .schedule-editor-note{display:block}
-.calendar-panel.editing .day:not(.muted){
+.calendar-panel.is-editing .schedule-help{display:block}
+.calendar-panel.is-editing .day[data-date]{
   cursor:pointer;
-  outline:2px dashed transparent;
-  outline-offset:-4px;
+  transition:.15s;
 }
-.calendar-panel.editing .day:not(.muted):hover{
-  outline-color:var(--orange);
+.calendar-panel.is-editing .day[data-date]:hover{
+  transform:translateY(-2px);
+  outline:2px solid var(--orange);
+  outline-offset:-2px;
   background:#fff8ef;
 }
-.schedule-status-modal{
+.day.today{box-shadow:inset 0 0 0 2px #2f2b28}
+.day.selected-date{outline:3px solid var(--orange)!important;outline-offset:-3px}
+.schedule-modal{
   position:fixed;
   inset:0;
-  z-index:2147483600;
+  z-index:2147483640;
   display:none;
   place-items:center;
   padding:20px;
-  background:rgba(31,26,22,.55);
+  background:rgba(28,23,19,.58);
 }
-.schedule-status-modal.show{display:grid}
-.schedule-status-box{
+.schedule-modal.show{display:grid}
+.schedule-dialog{
   width:min(390px,100%);
   padding:22px;
+  border:1px solid #e6c89c;
   border-radius:20px;
   background:#fff;
-  border:1px solid #e8cfa7;
-  box-shadow:0 22px 55px rgba(0,0,0,.24);
+  box-shadow:0 24px 60px rgba(0,0,0,.26);
 }
-.schedule-status-box h3{margin:0 0 6px}
-.schedule-status-box p{margin:0 0 16px;color:var(--muted);font-size:13px}
-.schedule-status-options{display:grid;gap:9px}
-.schedule-status-option{
-  border:1px solid #ead8bd;
+.schedule-dialog h3{margin:0 0 5px;font-size:22px}
+.schedule-dialog .date-label{margin:0 0 16px;color:var(--muted)}
+.schedule-choices{display:grid;gap:9px}
+.schedule-choice{
+  border:1px solid transparent;
   border-radius:13px;
-  padding:13px 14px;
-  background:#fff;
+  padding:13px 15px;
   font-weight:900;
   cursor:pointer;
   text-align:left;
 }
-.schedule-status-option.available{background:#e6f7e9;color:#28733c}
-.schedule-status-option.booked{background:#ffe1db;color:#a83c28}
-.schedule-status-option.working{background:#fff0c3;color:#86620f}
-.schedule-status-option.off{background:#ededed;color:#666}
-.schedule-status-option.clear{background:#fff;color:#756b62}
-.schedule-status-close{
+.schedule-choice.available{background:#e6f7e9;color:#28733c}
+.schedule-choice.booked{background:#ffe1db;color:#a83c28}
+.schedule-choice.working{background:#fff0c3;color:#86620f}
+.schedule-choice.off{background:#ededed;color:#666}
+.schedule-choice.clear{background:#fff;border-color:#ddd;color:#666}
+.schedule-close{
   width:100%;
-  margin-top:10px;
+  margin-top:11px;
+  padding:12px;
   border:0;
+  border-radius:12px;
   background:#2f2b28;
   color:#fff;
-  border-radius:12px;
-  padding:12px;
   font-weight:900;
   cursor:pointer;
 }
-@media(max-width:560px){
-  .schedule-editor-bar{justify-content:stretch}
-  .schedule-edit-btn{flex:1}
+.schedule-toast{
+  position:fixed;
+  left:50%;
+  bottom:24px;
+  z-index:2147483641;
+  transform:translate(-50%,20px);
+  opacity:0;
+  pointer-events:none;
+  padding:12px 17px;
+  border-radius:999px;
+  background:#2f2b28;
+  color:#fff;
+  font-size:13px;
+  font-weight:850;
+  transition:.2s;
+}
+.schedule-toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:700px){
+  .schedule-toolbar{justify-content:stretch}
+  .schedule-tool{flex:1}
 }
 </style>
 </head>
@@ -925,13 +948,16 @@ button,input,select,textarea{font:inherit}
 <section class="section" id="schedule">
 <div class="wrapper">
 <div class="section-head"><div class="kicker">07 · SCHEDULE</div><h2>작업 현황 캘린더</h2><p class="desc">현재 작업 상태와 다음 신규 작업 가능일을 확인할 수 있습니다.</p></div>
-<div class="panel calendar-panel" id="calendarPanel">
-<div class="schedule-editor-bar">
-<button class="schedule-edit-btn" id="scheduleEditToggle" type="button">일정 편집</button>
-<button class="schedule-edit-btn" id="scheduleResetLocal" type="button" hidden>저장 내용 초기화</button>
-<button class="schedule-edit-btn primary" id="scheduleDownloadHtml" type="button" hidden>수정본 HTML 다운로드</button>
+<div class="panel calendar-panel" id="schedulePanel">
+<div class="schedule-toolbar">
+<button class="schedule-tool" id="scheduleEditBtn" type="button">⚙ 일정 편집</button>
+<button class="schedule-tool" id="scheduleResetBtn" type="button" hidden>변경 초기화</button>
+<button class="schedule-tool save" id="scheduleSaveBtn" type="button" hidden>💾 수정본 HTML 저장</button>
 </div>
-<div class="schedule-editor-note">날짜를 누르고 상태를 선택하세요. 변경 내용은 이 브라우저에 자동 저장됩니다. 완료 후 <strong>수정본 HTML 다운로드</strong>를 눌러 GitHub의 index.html과 교체하면 됩니다.</div>
+<div class="schedule-help">
+날짜를 클릭해 상태를 변경하세요. 수정 내용은 이 브라우저에 자동 저장됩니다.
+완료 후 <strong>수정본 HTML 저장</strong>을 누르면 일정이 포함된 <strong>index.html</strong>이 내려받아집니다.
+</div>
 <div class="cal-topline">
 <div class="legend-inline">
 <span><i class="dot" style="background:#62b976"></i>예약 가능</span>
@@ -1083,50 +1109,50 @@ document.querySelectorAll('#calculator select').forEach(el=>el.addEventListener(
 calculate();
 document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('breakdown').classList.toggle('show');
 
-// 달력 + 클릭 편집기
-const scheduleStorageKey='artmugScheduleDataV1';
-const scheduleDefaultData={"2026-07-29":"working","2026-07-30":"booked","2026-07-31":"booked","2026-08-01":"booked","2026-08-02":"off","2026-08-03":"available","2026-08-04":"available","2026-08-05":"available","2026-08-06":"booked","2026-08-07":"booked","2026-08-08":"working","2026-08-09":"off","2026-08-10":"available","2026-08-11":"available","2026-08-12":"available"};
-const scheduleData=Object.assign({},scheduleDefaultData);
+// 달력
+const scheduleDefaults={"2026-07-29":"working","2026-07-30":"booked","2026-07-31":"booked","2026-08-01":"booked","2026-08-02":"off","2026-08-03":"available","2026-08-04":"available","2026-08-05":"available","2026-08-06":"booked","2026-08-07":"booked","2026-08-08":"working","2026-08-09":"off","2026-08-10":"available","2026-08-11":"available","2026-08-12":"available"};
+const scheduleStorageKey='artmug-schedule-v45';
+let scheduleData={...scheduleDefaults};
+let savedSchedule={};
 
-const savedSchedule=localStorage.getItem(scheduleStorageKey);
-if(savedSchedule){
-  try{
-    Object.assign(scheduleData,JSON.parse(savedSchedule));
-  }catch(error){
-    console.warn('저장된 일정 데이터를 읽지 못했습니다.',error);
-  }
+try{
+  savedSchedule=JSON.parse(localStorage.getItem(scheduleStorageKey)||'{}');
+  scheduleData={...scheduleData,...savedSchedule};
+}catch(error){
+  console.warn('일정 저장 데이터를 읽지 못했습니다.',error);
 }
 
 const labels={available:'예약 가능',booked:'예약 완료',working:'작업 중',off:'휴무'};
 let current=new Date(2026,7,1);
 let scheduleEditing=false;
-let selectedScheduleKey='';
+let selectedScheduleDate='';
 
 function key(y,m,d){
   return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
 }
-
-function formatKoreanDate(dateKey){
+function statusFor(dateKey){
+  return scheduleData[dateKey]||'available';
+}
+function koreanDate(dateKey){
   const [y,m,d]=dateKey.split('-').map(Number);
   return `${y}년 ${m}월 ${d}일`;
 }
-
-function getStatus(dateKey){
-  return scheduleData[dateKey]||'available';
+function saveLocalSchedule(){
+  const changes={};
+  Object.keys(scheduleData).forEach(dateKey=>{
+    const value=scheduleData[dateKey];
+    const defaultValue=scheduleDefaults[dateKey]||'available';
+    if(value!==defaultValue) changes[dateKey]=value;
+  });
+  localStorage.setItem(scheduleStorageKey,JSON.stringify(changes));
 }
-
-function saveScheduleLocal(){
-  localStorage.setItem(scheduleStorageKey,JSON.stringify(scheduleData));
-}
-
 function updateNextOpen(){
   const today=new Date();
   today.setHours(0,0,0,0);
-  let probe=new Date(today);
-
+  const probe=new Date(today);
   for(let i=0;i<730;i++){
     const dateKey=key(probe.getFullYear(),probe.getMonth(),probe.getDate());
-    if(getStatus(dateKey)==='available'){
+    if(statusFor(dateKey)==='available'){
       document.getElementById('nextOpen').textContent=`${probe.getMonth()+1}월 ${probe.getDate()}일`;
       return;
     }
@@ -1134,14 +1160,16 @@ function updateNextOpen(){
   }
   document.getElementById('nextOpen').textContent='확인 필요';
 }
-
 function renderCalendar(){
-  const y=current.getFullYear(),m=current.getMonth();
-  document.getElementById('monthTitle').textContent=`${y}년 ${m+1}월`;
+  const y=current.getFullYear();
+  const m=current.getMonth();
+  const today=new Date();
+  const todayKey=key(today.getFullYear(),today.getMonth(),today.getDate());
 
+  document.getElementById('monthTitle').textContent=`${y}년 ${m+1}월`;
   const grid=document.getElementById('calendarGrid');
   grid.innerHTML=['일','월','화','수','목','금','토']
-    .map(d=>`<div class="dow">${d}</div>`).join('');
+    .map(day=>`<div class="dow">${day}</div>`).join('');
 
   const first=new Date(y,m,1).getDay();
   const last=new Date(y,m+1,0).getDate();
@@ -1153,12 +1181,12 @@ function renderCalendar(){
 
   for(let d=1;d<=last;d++){
     const dateKey=key(y,m,d);
-    const st=getStatus(dateKey);
-    grid.insertAdjacentHTML(
-      'beforeend',
-      `<div class="day" data-date="${dateKey}" tabindex="${scheduleEditing?'0':'-1'}">
+    const status=statusFor(dateKey);
+    const todayClass=dateKey===todayKey?' today':'';
+    grid.insertAdjacentHTML('beforeend',
+      `<div class="day${todayClass}" data-date="${dateKey}" tabindex="${scheduleEditing?'0':'-1'}">
         <strong>${d}</strong>
-        <span class="status ${st}">${labels[st]}</span>
+        <span class="status ${status}">${labels[status]}</span>
       </div>`
     );
   }
@@ -1167,118 +1195,123 @@ function renderCalendar(){
   for(let d=1;d<=tail;d++){
     grid.insertAdjacentHTML('beforeend',`<div class="day muted"><strong>${d}</strong></div>`);
   }
-
   updateNextOpen();
 }
-
 function openScheduleModal(dateKey){
-  if(!scheduleEditing)return;
-  selectedScheduleKey=dateKey;
-  document.getElementById('scheduleModalDate').textContent=formatKoreanDate(dateKey);
-  const modal=document.getElementById('scheduleStatusModal');
+  if(!scheduleEditing) return;
+  selectedScheduleDate=dateKey;
+  document.getElementById('scheduleDateLabel').textContent=koreanDate(dateKey);
+  const modal=document.getElementById('scheduleModal');
   modal.classList.add('show');
   modal.setAttribute('aria-hidden','false');
 }
-
 function closeScheduleModal(){
-  const modal=document.getElementById('scheduleStatusModal');
+  const modal=document.getElementById('scheduleModal');
   modal.classList.remove('show');
   modal.setAttribute('aria-hidden','true');
-  selectedScheduleKey='';
+  selectedScheduleDate='';
+}
+function showScheduleToast(message){
+  const toast=document.getElementById('scheduleToast');
+  toast.textContent=message;
+  toast.classList.add('show');
+  clearTimeout(showScheduleToast.timer);
+  showScheduleToast.timer=setTimeout(()=>toast.classList.remove('show'),1800);
 }
 
 document.getElementById('calendarGrid').addEventListener('click',event=>{
-  const day=event.target.closest('.day[data-date]');
-  if(day)openScheduleModal(day.dataset.date);
+  const cell=event.target.closest('.day[data-date]');
+  if(cell) openScheduleModal(cell.dataset.date);
 });
-
 document.getElementById('calendarGrid').addEventListener('keydown',event=>{
-  if(event.key!=='Enter'&&event.key!==' ')return;
-  const day=event.target.closest('.day[data-date]');
-  if(day){
+  if(event.key!=='Enter'&&event.key!==' ') return;
+  const cell=event.target.closest('.day[data-date]');
+  if(cell){
     event.preventDefault();
-    openScheduleModal(day.dataset.date);
+    openScheduleModal(cell.dataset.date);
   }
 });
-
-document.querySelectorAll('.schedule-status-option').forEach(button=>{
+document.querySelectorAll('.schedule-choice').forEach(button=>{
   button.addEventListener('click',()=>{
-    if(!selectedScheduleKey)return;
+    if(!selectedScheduleDate) return;
     const status=button.dataset.status;
-
     if(status==='clear'){
-      delete scheduleData[selectedScheduleKey];
+      if(Object.prototype.hasOwnProperty.call(scheduleDefaults,selectedScheduleDate)){
+        scheduleData[selectedScheduleDate]=scheduleDefaults[selectedScheduleDate];
+      }else{
+        delete scheduleData[selectedScheduleDate];
+      }
     }else{
-      scheduleData[selectedScheduleKey]=status;
+      scheduleData[selectedScheduleDate]=status;
     }
-
-    saveScheduleLocal();
+    saveLocalSchedule();
     closeScheduleModal();
     renderCalendar();
+    showScheduleToast('일정이 변경되었습니다.');
   });
 });
 
-document.getElementById('scheduleModalClose').onclick=closeScheduleModal;
-document.getElementById('scheduleStatusModal').addEventListener('click',event=>{
-  if(event.target.id==='scheduleStatusModal')closeScheduleModal();
+document.getElementById('scheduleCloseBtn').onclick=closeScheduleModal;
+document.getElementById('scheduleModal').addEventListener('click',event=>{
+  if(event.target.id==='scheduleModal') closeScheduleModal();
+});
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape') closeScheduleModal();
 });
 
-document.getElementById('scheduleEditToggle').onclick=()=>{
+document.getElementById('scheduleEditBtn').onclick=()=>{
   scheduleEditing=!scheduleEditing;
-  const panel=document.getElementById('calendarPanel');
-  panel.classList.toggle('editing',scheduleEditing);
-
-  document.getElementById('scheduleEditToggle').textContent=scheduleEditing?'편집 종료':'일정 편집';
-  document.getElementById('scheduleDownloadHtml').hidden=!scheduleEditing;
-  document.getElementById('scheduleResetLocal').hidden=!scheduleEditing;
+  document.getElementById('schedulePanel').classList.toggle('is-editing',scheduleEditing);
+  document.getElementById('scheduleEditBtn').classList.toggle('active',scheduleEditing);
+  document.getElementById('scheduleEditBtn').textContent=scheduleEditing?'편집 종료':'⚙ 일정 편집';
+  document.getElementById('scheduleSaveBtn').hidden=!scheduleEditing;
+  document.getElementById('scheduleResetBtn').hidden=!scheduleEditing;
   renderCalendar();
 };
-
-document.getElementById('scheduleResetLocal').onclick=()=>{
-  if(!confirm('이 브라우저에 저장된 일정 변경 내용을 모두 초기화할까요?'))return;
+document.getElementById('scheduleResetBtn').onclick=()=>{
+  if(!confirm('이 브라우저에서 변경한 일정을 모두 초기화할까요?')) return;
   localStorage.removeItem(scheduleStorageKey);
-  Object.keys(scheduleData).forEach(k=>delete scheduleData[k]);
-  Object.assign(scheduleData,scheduleDefaultData);
+  scheduleData={...scheduleDefaults};
   renderCalendar();
+  showScheduleToast('변경 내용이 초기화되었습니다.');
 };
 
-function buildDownloadHtml(){
+function makeSavedHtml(){
   const clone=document.documentElement.cloneNode(true);
+  clone.querySelector('#schedulePanel')?.classList.remove('is-editing');
+  clone.querySelector('#scheduleModal')?.classList.remove('show');
 
-  clone.querySelector('#calendarPanel')?.classList.remove('editing');
-  clone.querySelector('#scheduleStatusModal')?.classList.remove('show');
-
-  const editToggle=clone.querySelector('#scheduleEditToggle');
-  const downloadButton=clone.querySelector('#scheduleDownloadHtml');
-  const resetButton=clone.querySelector('#scheduleResetLocal');
-
-  if(editToggle)editToggle.textContent='일정 편집';
-  if(downloadButton)downloadButton.hidden=true;
-  if(resetButton)resetButton.hidden=true;
+  const edit=clone.querySelector('#scheduleEditBtn');
+  const save=clone.querySelector('#scheduleSaveBtn');
+  const reset=clone.querySelector('#scheduleResetBtn');
+  if(edit){
+    edit.textContent='⚙ 일정 편집';
+    edit.classList.remove('active');
+  }
+  if(save) save.hidden=true;
+  if(reset) reset.hidden=true;
 
   let source='<!DOCTYPE html>
 '+clone.outerHTML;
-  const dataLiteral=JSON.stringify(scheduleData);
-
+  const embedded=JSON.stringify(scheduleData);
   source=source.replace(
-    /const scheduleDefaultData=\{.*?\};/s,
-    'const scheduleDefaultData='+dataLiteral+';'
+    /const scheduleDefaults=\{.*?\};/,
+    'const scheduleDefaults='+embedded+';'
   );
-
   return source;
 }
-
-document.getElementById('scheduleDownloadHtml').onclick=()=>{
-  const source=buildDownloadHtml();
+document.getElementById('scheduleSaveBtn').onclick=()=>{
+  const source=makeSavedHtml();
   const blob=new Blob([source],{type:'text/html;charset=utf-8'});
   const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  a.download='index.html';
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+  const link=document.createElement('a');
+  link.href=url;
+  link.download='index.html';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
+  showScheduleToast('수정된 index.html을 저장했습니다.');
 };
 
 document.getElementById('prevMonth').onclick=()=>{
@@ -1517,20 +1550,21 @@ html.artmug-embedded .mobile-bar {
 </script>
 
 
-<div class="schedule-status-modal" id="scheduleStatusModal" aria-hidden="true">
-  <div class="schedule-status-box" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle">
-    <h3 id="scheduleModalTitle">일정 상태 선택</h3>
-    <p id="scheduleModalDate"></p>
-    <div class="schedule-status-options">
-      <button class="schedule-status-option available" data-status="available" type="button">예약 가능</button>
-      <button class="schedule-status-option booked" data-status="booked" type="button">예약 완료</button>
-      <button class="schedule-status-option working" data-status="working" type="button">작업 중</button>
-      <button class="schedule-status-option off" data-status="off" type="button">휴무</button>
-      <button class="schedule-status-option clear" data-status="clear" type="button">기본값으로 되돌리기</button>
+<div class="schedule-modal" id="scheduleModal" aria-hidden="true">
+  <div class="schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="scheduleDialogTitle">
+    <h3 id="scheduleDialogTitle">일정 상태 선택</h3>
+    <p class="date-label" id="scheduleDateLabel"></p>
+    <div class="schedule-choices">
+      <button class="schedule-choice available" data-status="available" type="button">예약 가능</button>
+      <button class="schedule-choice booked" data-status="booked" type="button">예약 완료</button>
+      <button class="schedule-choice working" data-status="working" type="button">작업 중</button>
+      <button class="schedule-choice off" data-status="off" type="button">휴무</button>
+      <button class="schedule-choice clear" data-status="clear" type="button">기본값(예약 가능)으로 되돌리기</button>
     </div>
-    <button class="schedule-status-close" id="scheduleModalClose" type="button">닫기</button>
+    <button class="schedule-close" id="scheduleCloseBtn" type="button">닫기</button>
   </div>
 </div>
+<div class="schedule-toast" id="scheduleToast">저장되었습니다.</div>
 
 </body>
 </html>
