@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v38</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v40</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -1195,6 +1195,61 @@ html.artmug-embedded .mobile-bar {
   } catch (e) {
     document.documentElement.classList.add('artmug-embedded');
   }
+})();
+</script>
+
+
+<script>
+/* v40: iframe 내부의 본문 앵커 버튼도 아트머그 바깥 페이지를 스크롤 */
+(function () {
+  function isEmbedded() {
+    try {
+      return window.self !== window.top;
+    } catch (e) {
+      return true;
+    }
+  }
+
+  if (!isEmbedded()) {
+    return;
+  }
+
+  document.addEventListener('click', function (event) {
+    var link = event.target.closest('a[href^="#"]');
+
+    if (!link) {
+      return;
+    }
+
+    var href = link.getAttribute('href');
+
+    if (!href || href === '#') {
+      return;
+    }
+
+    var id = href.slice(1);
+    var target = document.getElementById(id);
+
+    if (!target) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    var offset =
+      target.getBoundingClientRect().top +
+      window.scrollY;
+
+    window.parent.postMessage(
+      {
+        type: 'returnOffset',
+        id: id,
+        offset: offset
+      },
+      '*'
+    );
+  }, true);
 })();
 </script>
 
