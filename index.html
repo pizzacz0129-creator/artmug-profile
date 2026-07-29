@@ -2,9 +2,22 @@
 
 <html lang="ko">
 <head>
+
+<script>
+(function(){
+  try{
+    if(window.self !== window.top){
+      document.documentElement.classList.add('artmug-host');
+    }
+  }catch(e){
+    document.documentElement.classList.add('artmug-host');
+  }
+})();
+</script>
+
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v36</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v37</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -1154,6 +1167,39 @@ html.artmug-host .floating-nav .nav-btn{
 /* 아트머그에서는 하단 모바일 바보다 우측 사이드바를 우선 사용 */
 html.artmug-host .mobile-bar{
   display:none !important;
+}
+</style>
+
+
+<script>
+/* v37: 아트머그 바깥쪽 사이드바에서 전달되는 이동 명령 처리 */
+window.addEventListener('message', function(event){
+  const data = event.data;
+  if (!data || data.type !== 'ARTMUG_SCROLL_TO') return;
+
+  const id = String(data.id || '').replace(/^#/, '');
+  if (!id) return;
+
+  const target = document.getElementById(id);
+  if (!target) return;
+
+  target.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+});
+</script>
+
+<style>
+/*
+ * 아트머그는 8700px짜리 iframe 자체를 부모 페이지에서 스크롤하므로,
+ * iframe 내부의 position:fixed는 브라우저 화면이 아니라
+ * 8700px 높이의 iframe을 기준으로 고정된다.
+ * 임베드 상태에서는 내부 사이드바를 숨기고,
+ * 아트머그 부모 페이지의 외부 사이드바를 사용한다.
+ */
+html.artmug-host .floating-nav{
+  display:none!important;
 }
 </style>
 
