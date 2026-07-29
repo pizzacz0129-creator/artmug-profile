@@ -851,16 +851,19 @@ button,input,select,textarea{font:inherit}
   .schedule-tool{flex:1}
 }
 
-@media(max-width:900px){
-.mobile-only-home{display:block;position:sticky;top:8px;z-index:20;margin:0 16px 12px}
-.mobile-only-home button{width:100%;padding:12px;border:0;border-radius:12px;background:#2f2b28;color:#fff;font-weight:800}
-.mobile-section-hidden{display:none!important}
-}
+
 
 </style>
+
+<style>
+/* 모바일에서는 이동용 하단 메뉴를 표시하지 않음. PC 사이드바는 기존 그대로 유지 */
+@media(max-width:700px){
+  .mobile-bar{display:none!important}
+}
+</style>
+
 </head>
 <body>
-<div class='mobile-only-home' style='display:none'><button id='showAllSections'>전체 보기</button></div>
 <nav class="floating-nav">
 <a class="nav-btn" href="#portfolio">포트폴리오</a>
 <a class="nav-btn" href="#comments">시청자 반응</a>
@@ -1863,37 +1866,6 @@ html.artmug-embedded .mobile-bar {
   setTimeout(reportHeight,300);
   setTimeout(reportHeight,1200);
 })();
-</script>
-
-
-<script>
-document.addEventListener("DOMContentLoaded",()=>{
- if(window.innerWidth>900)return;
- const ids=["portfolio","comments","subtitles","process","price","calculator","schedule","guide","apply"];
- const home=document.querySelector(".mobile-only-home");
- const showAll=()=>{
-   home.style.display="none";
-   ids.forEach(id=>{const s=document.getElementById(id);if(s)s.classList.remove("mobile-section-hidden");});
- };
- document.getElementById("showAllSections").onclick=showAll;
- document.querySelectorAll(".mobile-bar a").forEach(a=>{
-   a.addEventListener("click",e=>{
-      const href=a.getAttribute("href");
-      if(!href||!href.startsWith("#"))return;
-      e.preventDefault();
-      const target=href.slice(1);
-      ids.forEach(id=>{
-        const s=document.getElementById(id);
-        if(s){
-          if(id===target)s.classList.remove("mobile-section-hidden");
-          else s.classList.add("mobile-section-hidden");
-        }
-      });
-      home.style.display="block";
-      window.scrollTo({top:0,behavior:"smooth"});
-   });
- });
-});
 </script>
 
 </body></html>
