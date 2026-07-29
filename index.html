@@ -1006,6 +1006,24 @@ button,input,select,textarea{font:inherit}
 }
 </style>
 
+
+<style>
+/* 모바일에서 견적 계산기 이후 콘텐츠가 잘리는 현상 방지 */
+@media (max-width:700px){
+  html,body,main,
+  #calculator,
+  #calculator .wrapper,
+  #calculator .calc-box{
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+  #calculator{
+    contain:none!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <nav class="floating-nav">
@@ -1027,7 +1045,7 @@ button,input,select,textarea{font:inherit}
 <div class="wrapper">
 <div class="hero-card">
 <div class="kicker">VTUBER VIDEO EDITOR</div>
-<h1>VTuber 콘텐츠에 특화된<br>영상 편집</h1>
+<h1>VTuber 티키타카에 특화된<br>영상 편집</h1>
 <p>컷 편집부터 자막·효과·상황 연출까지<br>영상의 재미가 시청자에게 정확히 전달되도록 편집합니다.</p>
 <div class="actions">
 <a class="btn btn-primary" href="#calculator">예상 견적 계산하기</a>
@@ -1318,7 +1336,6 @@ button,input,select,textarea{font:inherit}
 </section>
 </main>
 <div class="modal" id="modal"><img alt="" id="modalImg"></div>
-<footer class="footer">© VTuber Video Editor</footer>
 
 
 
@@ -2150,31 +2167,77 @@ html.artmug-embedded .mobile-bar {
 </style>
 
 <script>
-/* v51 모바일 앵커·iframe 높이·터치 안정화 */
+/* 모바일·아트머그 iframe 전체 높이 동기화 */
 (function(){
   function embedded(){
     try{return window.self!==window.top;}catch(e){return true;}
   }
 
-  function reportHeight(){
-    if(!embedded()) return;
+  function measuredHeight(){
+    var doc=document.documentElement;
+    var body=document.body;
     var height=Math.max(
-      document.documentElement.scrollHeight,
-      document.body ? document.body.scrollHeight : 0
+      doc ? doc.scrollHeight : 0,
+      doc ? doc.offsetHeight : 0,
+      doc ? doc.clientHeight : 0,
+      body ? body.scrollHeight : 0,
+      body ? body.offsetHeight : 0
     );
-    window.parent.postMessage({type:'artmugContentHeight',height:height},'*');
-    window.parent.postMessage({type:'resizeIframe',height:height},'*');
+
+    /* 일부 모바일 웹뷰에서 scrollHeight가 중간까지만 계산되는 경우 보정 */
+    document.querySelectorAll('main, main > section, footer').forEach(function(el){
+      var rect=el.getBoundingClientRect();
+      height=Math.max(height,Math.ceil(rect.bottom+window.scrollY));
+    });
+
+    return Math.ceil(height+24);
   }
 
+  var timer=null;
+  function reportHeight(){
+    if(!embedded()) return;
+    clearTimeout(timer);
+    timer=setTimeout(function(){
+      var height=measuredHeight();
 
+      /* 아트머그 버전별 수신 형식에 대응 */
+      window.parent.postMessage({type:'artmugContentHeight',height:height},'*');
+      window.parent.postMessage({type:'resizeIframe',height:height},'*');
+      window.parent.postMessage({type:'setIframeHeight',height:height},'*');
+      window.parent.postMessage({type:'setHeight',height:height},'*');
+      window.parent.postMessage({type:'resize',height:height},'*');
+    },60);
+  }
 
   window.addEventListener('load',reportHeight);
   window.addEventListener('resize',reportHeight);
+  window.addEventListener('orientationchange',reportHeight);
+
+  document.addEventListener('click',function(){
+    setTimeout(reportHeight,0);
+    setTimeout(reportHeight,250);
+    setTimeout(reportHeight,700);
+  },true);
+
+  document.addEventListener('input',reportHeight,true);
+  document.addEventListener('change',reportHeight,true);
+
   if('ResizeObserver' in window){
-    new ResizeObserver(reportHeight).observe(document.documentElement);
+    new ResizeObserver(reportHeight).observe(document.body);
   }
-  setTimeout(reportHeight,300);
-  setTimeout(reportHeight,1200);
+
+  if('MutationObserver' in window){
+    new MutationObserver(reportHeight).observe(document.body,{
+      childList:true,
+      subtree:true,
+      attributes:true,
+      attributeFilter:['class','style','hidden','aria-expanded']
+    });
+  }
+
+  [0,200,500,1000,1800,3000,5000,8000].forEach(function(delay){
+    setTimeout(reportHeight,delay);
+  });
 })();
 </script>
 
