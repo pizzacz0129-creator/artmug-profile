@@ -2,7 +2,7 @@
 <html lang="ko" class="artmug-embedded"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1" name="viewport">
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v50</title>
+<title>VTuber 영상 편집 | </title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -850,9 +850,17 @@ button,input,select,textarea{font:inherit}
   .schedule-toolbar{justify-content:stretch}
   .schedule-tool{flex:1}
 }
+
+@media(max-width:900px){
+.mobile-only-home{display:block;position:sticky;top:8px;z-index:20;margin:0 16px 12px}
+.mobile-only-home button{width:100%;padding:12px;border:0;border-radius:12px;background:#2f2b28;color:#fff;font-weight:800}
+.mobile-section-hidden{display:none!important}
+}
+
 </style>
 </head>
 <body>
+<div class='mobile-only-home' style='display:none'><button id='showAllSections'>전체 보기</button></div>
 <nav class="floating-nav">
 <a class="nav-btn" href="#portfolio">포트폴리오</a>
 <a class="nav-btn" href="#comments">시청자 반응</a>
@@ -1153,7 +1161,7 @@ button,input,select,textarea{font:inherit}
 </section>
 </main>
 <div class="modal" id="modal"><img alt="" id="modalImg"></div>
-<footer class="footer">© VTuber Video Editor · 아트머그 임베드 시안 v8</footer>
+<footer class="footer">© VTuber Video Editor</footer>
 
 
 
@@ -1855,6 +1863,37 @@ html.artmug-embedded .mobile-bar {
   setTimeout(reportHeight,300);
   setTimeout(reportHeight,1200);
 })();
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded",()=>{
+ if(window.innerWidth>900)return;
+ const ids=["portfolio","comments","subtitles","process","price","calculator","schedule","guide","apply"];
+ const home=document.querySelector(".mobile-only-home");
+ const showAll=()=>{
+   home.style.display="none";
+   ids.forEach(id=>{const s=document.getElementById(id);if(s)s.classList.remove("mobile-section-hidden");});
+ };
+ document.getElementById("showAllSections").onclick=showAll;
+ document.querySelectorAll(".mobile-bar a").forEach(a=>{
+   a.addEventListener("click",e=>{
+      const href=a.getAttribute("href");
+      if(!href||!href.startsWith("#"))return;
+      e.preventDefault();
+      const target=href.slice(1);
+      ids.forEach(id=>{
+        const s=document.getElementById(id);
+        if(s){
+          if(id===target)s.classList.remove("mobile-section-hidden");
+          else s.classList.add("mobile-section-hidden");
+        }
+      });
+      home.style.display="block";
+      window.scrollTo({top:0,behavior:"smooth"});
+   });
+ });
+});
 </script>
 
 </body></html>
