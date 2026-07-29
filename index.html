@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v31</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v33</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -159,29 +159,8 @@ button,input,select,textarea{font:inherit}
 
 .footer{text-align:center;color:var(--muted);padding:45px 20px 90px}
 
-/* v31: 데모 30의 기능은 그대로 두고, 중간 폭에서 사이드바만 복원 */
-@media(min-width:901px) and (max-width:1250px){
-  .floating-nav{
-    display:grid;
-    right:10px;
-    width:124px;
-    gap:6px;
-    z-index:80;
-  }
-  .floating-nav .nav-btn{
-    min-height:42px;
-    padding:9px 8px;
-    border-radius:12px;
-    font-size:12px;
-    line-height:1.25;
-    pointer-events:auto;
-  }
-  .floating-nav .nav-btn.top{
-    min-height:40px;
-  }
-}
+@media(max-width:1250px){.floating-nav{display:none}}
 @media(max-width:900px){
-  .floating-nav{display:none!important}
   .subtitle-wrap,.price-grid,.portfolio-grid,.calc-grid,.consult-top,.apply-grid{grid-template-columns:1fr}
   .calc-row{grid-template-columns:1fr}
   .total-bar,.breakdown{grid-column:1}
@@ -1092,5 +1071,67 @@ sections.forEach(s=>observer.observe(s));
     });
   });
 })();
-</script></body>
+</script>
+<script>
+(() => {
+  const onArtmug = /(^|\.)artmug\.kr$/i.test(location.hostname);
+
+  if (onArtmug) {
+    document.documentElement.classList.add('artmug-host');
+  }
+
+  /*
+   * 아트머그가 내부 앵커 클릭을 가로채는 경우를 우회한다.
+   * 캡처 단계에서 먼저 처리해 #portfolio, #schedule 등의 이동을 보장한다.
+   */
+  document.addEventListener('click', (event) => {
+    const link = event.target.closest('a[href^="#"]');
+    if (!link) return;
+
+    const href = link.getAttribute('href');
+    if (!href || href === '#') return;
+
+    const target = document.querySelector(href);
+    if (!target) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    target.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    });
+
+    try {
+      history.replaceState(null, '', href);
+    } catch (_) {}
+  }, true);
+})();
+</script>
+
+<style>
+/* 아트머그 호스트 페이지에서만 데스크톱 사이드바를 강제 표시 */
+html.artmug-host .floating-nav{
+  display:grid !important;
+  position:fixed !important;
+  right:18px !important;
+  top:50% !important;
+  transform:translateY(-50%) !important;
+  width:150px !important;
+  z-index:2147483000 !important;
+  pointer-events:auto !important;
+}
+
+html.artmug-host .floating-nav .nav-btn{
+  pointer-events:auto !important;
+}
+
+/* 아트머그에서는 하단 모바일 바보다 우측 사이드바를 우선 사용 */
+html.artmug-host .mobile-bar{
+  display:none !important;
+}
+</style>
+
+</body>
 </html>
