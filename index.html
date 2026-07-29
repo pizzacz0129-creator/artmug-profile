@@ -159,7 +159,7 @@ button,input,select,textarea{font:inherit}
 
 .footer{text-align:center;color:var(--muted);padding:45px 20px 90px}
 
-@media(max-width:900px){.floating-nav{display:none}}
+@media(max-width:700px){.floating-nav{display:none}}
 @media(max-width:900px){
   .subtitle-wrap,.price-grid,.portfolio-grid,.calc-grid,.consult-top,.apply-grid{grid-template-columns:1fr}
   .calc-row{grid-template-columns:1fr}
@@ -734,35 +734,31 @@ button,input,select,textarea{font:inherit}
 
 /* Artmug iframe final adjustments */
 .footer{display:none!important}
-@media (min-width:901px) and (max-width:1250px){
-  body{padding-right:144px}
+
+/* Artmug embeds are usually around 900–1100px wide.
+   Reserve a compact right rail so the fixed menu does not cover content. */
+@media (min-width:701px) and (max-width:1250px){
+  body{padding-right:136px}
   .floating-nav{
-    display:grid;
+    display:grid!important;
     right:8px;
-    width:128px;
-    gap:7px;
+    width:120px;
+    gap:6px;
   }
   .floating-nav .nav-btn{
     min-height:42px;
-    padding:10px 8px;
-    border-radius:13px;
+    padding:9px 8px;
+    border-radius:12px;
     font-size:12px;
     line-height:1.25;
   }
   .floating-nav .nav-btn.top{min-height:40px}
-  .wrapper,
-  #portfolio .wrapper,
-  #comments .wrapper,
-  #subtitles .wrapper,
-  #process .wrapper,
-  #price .wrapper,
-  #schedule .wrapper,
-  #guide .wrapper,
-  #calculator .wrapper,
-  #apply .wrapper{
-    width:min(980px,calc(100% - 24px));
-  }
-  .hero-card{width:min(860px,100%)}
+}
+
+/* On genuinely narrow screens, use the existing bottom mobile bar. */
+@media (max-width:700px){
+  body{padding-right:0}
+  .floating-nav{display:none!important}
 }
 
 </style>
