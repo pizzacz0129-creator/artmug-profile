@@ -979,6 +979,33 @@ button,input,select,textarea{font:inherit}
 }
 </style>
 
+
+<style>
+/* 재작성된 달력 모듈 */
+#calendarGrid .day{
+  font:inherit;
+  text-align:left;
+}
+#calendarGrid button.day{
+  appearance:none;
+  width:100%;
+  background:transparent;
+}
+#calendarGrid button.day:disabled{
+  color:inherit;
+  opacity:1;
+  cursor:default;
+}
+#schedulePanel.is-editing #calendarGrid button.day:not(:disabled){
+  cursor:pointer;
+}
+#scheduleToast.error{
+  max-width:min(92vw,720px);
+  background:#9d2c20;
+  white-space:normal;
+}
+</style>
+
 </head>
 <body>
 <nav class="floating-nav">
@@ -1369,301 +1396,410 @@ document.querySelectorAll('#calculator select').forEach(el=>el.addEventListener(
 calculate();
 document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('breakdown').classList.toggle('show');
 
-// 달력 · Supabase 연동
-const SUPABASE_URL='https://dwodundpgzywxdeujgsq.supabase.co';
-const SUPABASE_KEY='sb_publishable_jRrW5fZ7_sj1gQpf2V7PGQ_gD7oEiHL';
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+// 달력 모듈
+(() => {
+  'use strict';
 
-const scheduleDefaults={"2026-07-29":"working","2026-07-30":"working","2026-07-31":"working","2026-08-01":"available","2026-08-02":"available","2026-08-03":"available","2026-08-04":"available","2026-08-05":"available","2026-08-06":"available","2026-08-07":"available","2026-08-08":"available","2026-08-09":"available","2026-08-10":"available","2026-08-11":"available","2026-08-12":"available","2026-08-15":"available"};
-let scheduleData={...scheduleDefaults};
-const labels={available:'예약 가능',booked:'예약 완료',working:'작업 중',off:'휴무'};
-const now=new Date();
-let current=new Date(now.getFullYear(),now.getMonth(),1);
-let scheduleEditing=false;
-let selectedScheduleDate='';
-let signedInUser=null;
-
-function key(y,m,d){
-  return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-}
-function statusFor(dateKey){
-  return scheduleData[dateKey]||'available';
-}
-function koreanDate(dateKey){
-  const [y,m,d]=dateKey.split('-').map(Number);
-  return `${y}년 ${m}월 ${d}일`;
-}
-function setScheduleHelp(message){
-  const help=document.getElementById('scheduleHelp');
-  if(help) help.textContent=message;
-}
-function setAdminUI(){
-  const edit=document.getElementById('scheduleEditBtn');
-  const logout=document.getElementById('scheduleLogoutBtn');
-  const panel=document.getElementById('schedulePanel');
-
-  if(signedInUser){
-    edit.textContent=scheduleEditing?'편집 종료':'일정 편집';
-    logout.hidden=false;
-    panel.classList.toggle('is-editing',scheduleEditing);
-    setScheduleHelp(scheduleEditing
-      ? '관리자 편집 모드입니다. 날짜를 눌러 상태를 변경하면 즉시 저장됩니다.'
-      : '관리자로 로그인했습니다. 일정 편집 버튼을 누르면 날짜를 수정할 수 있습니다.');
-  }else{
-    scheduleEditing=false;
-    edit.textContent='관리자 로그인';
-    logout.hidden=true;
-    panel.classList.remove('is-editing');
-    setScheduleHelp('방문자는 달을 이동해 작업 가능 일정을 확인할 수 있습니다.');
-  }
-  renderCalendar();
-}
-async function loadSchedule(silent=false){
-  const {data,error}=await db
-    .from('calendar_events')
-    .select('day,status')
-    .order('day',{ascending:true});
-
-  if(error){
-    console.error('일정을 불러오지 못했습니다.',error);
-    if(!silent) showScheduleToast('일정을 불러오지 못했습니다.');
-    return;
-  }
-
-  scheduleData={...scheduleDefaults};
-  (data||[]).forEach(row=>{
-    if(row.day&&labels[row.status]) scheduleData[row.day]=row.status;
+  const CONFIG = Object.freeze({
+    supabaseUrl: 'https://dwodundpgzywxdeujgsq.supabase.co',
+    supabaseKey: 'sb_publishable_jRrW5fZ7_sj1gQpf2V7PGQ_gD7oEiHL',
+    adminEmail: 'pizzacz0129@gmail.com',
+    table: 'calendar_events',
+    refreshMs: 30000
   });
-  renderCalendar();
-}
-async function saveScheduleStatus(dateKey,status){
-  const payload={
-    day:dateKey,
-    status:status,
-    updated_at:new Date().toISOString()
+
+  const LABELS = Object.freeze({
+    available: '예약 가능',
+    booked: '예약 완료',
+    working: '작업 중',
+    off: '휴무'
+  });
+
+  const DEFAULTS = Object.freeze({
+    '2026-07-29': 'working',
+    '2026-07-30': 'working',
+    '2026-07-31': 'working',
+    '2026-08-01': 'available',
+    '2026-08-02': 'available',
+    '2026-08-03': 'available',
+    '2026-08-04': 'available',
+    '2026-08-05': 'available',
+    '2026-08-06': 'available',
+    '2026-08-07': 'available',
+    '2026-08-08': 'available',
+    '2026-08-09': 'available',
+    '2026-08-10': 'available',
+    '2026-08-11': 'available',
+    '2026-08-12': 'available',
+    '2026-08-15': 'available'
+  });
+
+  const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+
+  const state = {
+    month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    events: { ...DEFAULTS },
+    user: null,
+    editing: false,
+    selectedDate: null,
+    loading: false
   };
-  const {error}=await db
-    .from('calendar_events')
-    .upsert(payload,{onConflict:'day'});
 
-  if(error){
-    console.error('일정 저장 실패',error);
-    showScheduleToast('저장하지 못했습니다. 다시 로그인해 주세요.');
-    return false;
-  }
-  scheduleData[dateKey]=status;
-  renderCalendar();
-  showScheduleToast('일정이 저장되었습니다.');
-  return true;
-}
-async function clearScheduleStatus(dateKey){
-  const {error}=await db
-    .from('calendar_events')
-    .delete()
-    .eq('day',dateKey);
+  const els = {
+    panel: document.getElementById('schedulePanel'),
+    grid: document.getElementById('calendarGrid'),
+    monthTitle: document.getElementById('monthTitle'),
+    nextOpen: document.getElementById('nextOpen'),
+    editBtn: document.getElementById('scheduleEditBtn'),
+    logoutBtn: document.getElementById('scheduleLogoutBtn'),
+    help: document.getElementById('scheduleHelp'),
+    modal: document.getElementById('scheduleModal'),
+    modalDialog: document.querySelector('#scheduleModal .schedule-dialog'),
+    dateLabel: document.getElementById('scheduleDateLabel'),
+    closeBtn: document.getElementById('scheduleCloseBtn'),
+    toast: document.getElementById('scheduleToast'),
+    prevBtn: document.getElementById('prevMonth'),
+    nextBtn: document.getElementById('nextMonth')
+  };
 
-  if(error){
-    console.error('일정 초기화 실패',error);
-    showScheduleToast('초기화하지 못했습니다.');
-    return false;
+  function dateKey(year, monthIndex, day) {
+    return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
 
-  if(Object.prototype.hasOwnProperty.call(scheduleDefaults,dateKey)){
-    scheduleData[dateKey]=scheduleDefaults[dateKey];
-  }else{
-    delete scheduleData[dateKey];
+  function statusFor(key) {
+    return state.events[key] || 'available';
   }
-  renderCalendar();
-  showScheduleToast('기본 상태로 되돌렸습니다.');
-  return true;
-}
-function updateNextOpen(){
-  const today=new Date();
-  today.setHours(0,0,0,0);
-  const probe=new Date(today);
-  for(let i=0;i<730;i++){
-    const dateKey=key(probe.getFullYear(),probe.getMonth(),probe.getDate());
-    if(statusFor(dateKey)==='available'){
-      document.getElementById('nextOpen').textContent=`${probe.getMonth()+1}월 ${probe.getDate()}일`;
+
+  function setHelp(text) {
+    if (els.help) els.help.textContent = text;
+  }
+
+  function toast(message, isError = false) {
+    if (!els.toast) return;
+    els.toast.textContent = message;
+    els.toast.classList.toggle('error', isError);
+    els.toast.classList.add('show');
+    clearTimeout(toast.timer);
+    toast.timer = setTimeout(() => {
+      els.toast.classList.remove('show', 'error');
+    }, 2600);
+  }
+
+  function describeError(error) {
+    if (!error) return '알 수 없는 오류';
+    return [error.message, error.details, error.hint, error.code]
+      .filter(Boolean)
+      .join(' · ');
+  }
+
+  function updateAdminUI() {
+    const loggedIn = Boolean(state.user);
+
+    state.editing = loggedIn && state.editing;
+    els.panel?.classList.toggle('is-editing', state.editing);
+
+    if (els.editBtn) {
+      els.editBtn.textContent = !loggedIn
+        ? '관리자 로그인'
+        : state.editing
+          ? '편집 종료'
+          : '일정 편집';
+    }
+
+    if (els.logoutBtn) els.logoutBtn.hidden = !loggedIn;
+
+    setHelp(
+      !loggedIn
+        ? '방문자는 달을 이동해 작업 가능 일정을 확인할 수 있습니다.'
+        : state.editing
+          ? '관리자 편집 모드입니다. 날짜를 눌러 상태를 변경하면 즉시 저장됩니다.'
+          : '관리자로 로그인했습니다. 일정 편집을 누르면 날짜를 수정할 수 있습니다.'
+    );
+
+    render();
+  }
+
+  async function loadEvents({ silent = false } = {}) {
+    if (state.loading) return;
+    state.loading = true;
+
+    const { data, error } = await client
+      .from(CONFIG.table)
+      .select('day,status')
+      .order('day', { ascending: true });
+
+    state.loading = false;
+
+    if (error) {
+      console.error('[calendar] load failed:', error);
+      if (!silent) toast(`일정 불러오기 실패: ${describeError(error)}`, true);
       return;
     }
-    probe.setDate(probe.getDate()+1);
-  }
-  document.getElementById('nextOpen').textContent='확인 필요';
-}
-function renderCalendar(){
-  const y=current.getFullYear();
-  const m=current.getMonth();
-  const today=new Date();
-  const todayKey=key(today.getFullYear(),today.getMonth(),today.getDate());
 
-  document.getElementById('monthTitle').textContent=`${y}년 ${m+1}월`;
-  const grid=document.getElementById('calendarGrid');
-  grid.innerHTML=['일','월','화','수','목','금','토']
-    .map(day=>`<div class="dow">${day}</div>`).join('');
-
-  const first=new Date(y,m,1).getDay();
-  const last=new Date(y,m+1,0).getDate();
-  const prevLast=new Date(y,m,0).getDate();
-
-  for(let i=first-1;i>=0;i--){
-    grid.insertAdjacentHTML('beforeend',`<div class="day muted"><strong>${prevLast-i}</strong></div>`);
-  }
-
-  for(let d=1;d<=last;d++){
-    const dateKey=key(y,m,d);
-    const status=statusFor(dateKey);
-    const todayClass=dateKey===todayKey?' today':'';
-    grid.insertAdjacentHTML('beforeend',
-      `<div class="day${todayClass}" data-date="${dateKey}" tabindex="${scheduleEditing?'0':'-1'}">
-        <strong>${d}</strong>
-        <span class="status ${status}">${labels[status]}</span>
-      </div>`
-    );
-  }
-
-  const tail=(7-((first+last)%7))%7;
-  for(let d=1;d<=tail;d++){
-    grid.insertAdjacentHTML('beforeend',`<div class="day muted"><strong>${d}</strong></div>`);
-  }
-  updateNextOpen();
-}
-function openScheduleModal(dateKey,sourceCell){
-  if(!scheduleEditing||!signedInUser) return;
-  selectedScheduleDate=dateKey;
-  document.getElementById('scheduleDateLabel').textContent=koreanDate(dateKey);
-
-  const panel=document.getElementById('schedulePanel');
-  const modal=document.getElementById('scheduleModal');
-  const dialog=modal.querySelector('.schedule-dialog');
-  const panelRect=panel.getBoundingClientRect();
-  const cellRect=sourceCell.getBoundingClientRect();
-
-  modal.classList.add('show');
-  modal.setAttribute('aria-hidden','false');
-
-  requestAnimationFrame(()=>{
-    const dialogRect=dialog.getBoundingClientRect();
-    const gap=12;
-    const margin=12;
-    let left=(cellRect.left-panelRect.left)+(cellRect.width/2)-(dialogRect.width/2);
-    left=Math.max(margin,Math.min(left,panelRect.width-dialogRect.width-margin));
-    let top=(cellRect.top-panelRect.top)-dialogRect.height-gap;
-    if(top<margin) top=(cellRect.bottom-panelRect.top)+gap;
-    top=Math.max(margin,Math.min(top,panelRect.height-dialogRect.height-margin));
-    dialog.style.left=left+'px';
-    dialog.style.top=top+'px';
-    dialog.style.transform='none';
-  });
-}
-function closeScheduleModal(){
-  const modal=document.getElementById('scheduleModal');
-  modal.classList.remove('show');
-  modal.setAttribute('aria-hidden','true');
-  selectedScheduleDate='';
-}
-function showScheduleToast(message){
-  const toast=document.getElementById('scheduleToast');
-  toast.textContent=message;
-  toast.classList.add('show');
-  clearTimeout(showScheduleToast.timer);
-  showScheduleToast.timer=setTimeout(()=>toast.classList.remove('show'),2200);
-}
-async function adminLogin(){
-  const password=prompt('관리자 비밀번호를 입력하세요.');
-  if(!password) return;
-
-  const {data,error}=await db.auth.signInWithPassword({
-    email:'pizzacz0129@gmail.com',
-    password
-  });
-
-  if(error){
-    console.error(error);
-    alert('비밀번호가 맞지 않거나 관리자 계정 설정이 완료되지 않았습니다.');
-    return;
-  }
-
-  signedInUser=data.user;
-  scheduleEditing=true;
-  setAdminUI();
-  showScheduleToast('관리자 편집 모드가 켜졌습니다.');
-}
-
-document.getElementById('calendarGrid').addEventListener('click',event=>{
-  const cell=event.target.closest('.day[data-date]');
-  if(cell) openScheduleModal(cell.dataset.date,cell);
-});
-document.getElementById('calendarGrid').addEventListener('keydown',event=>{
-  if(event.key!=='Enter'&&event.key!==' ') return;
-  const cell=event.target.closest('.day[data-date]');
-  if(cell){
-    event.preventDefault();
-    openScheduleModal(cell.dataset.date,cell);
-  }
-});
-document.querySelectorAll('.schedule-choice').forEach(button=>{
-  button.addEventListener('click',async()=>{
-    if(!selectedScheduleDate||!signedInUser) return;
-    const dateKey=selectedScheduleDate;
-    const status=button.dataset.status;
-    closeScheduleModal();
-    if(status==='clear'){
-      await clearScheduleStatus(dateKey);
-    }else{
-      await saveScheduleStatus(dateKey,status);
+    state.events = { ...DEFAULTS };
+    for (const row of data || []) {
+      if (row.day && LABELS[row.status]) {
+        state.events[row.day] = row.status;
+      }
     }
-  });
-});
-
-document.getElementById('scheduleCloseBtn').onclick=closeScheduleModal;
-document.getElementById('scheduleModal').addEventListener('click',event=>{
-  if(event.target.id==='scheduleModal') closeScheduleModal();
-});
-document.addEventListener('keydown',event=>{
-  if(event.key==='Escape') closeScheduleModal();
-});
-
-document.getElementById('scheduleEditBtn').onclick=async()=>{
-  if(!signedInUser){
-    await adminLogin();
-    return;
+    render();
   }
-  scheduleEditing=!scheduleEditing;
-  setAdminUI();
-};
-document.getElementById('scheduleLogoutBtn').onclick=async()=>{
-  await db.auth.signOut();
-  signedInUser=null;
-  scheduleEditing=false;
-  setAdminUI();
-  showScheduleToast('로그아웃했습니다.');
-};
 
-document.getElementById('prevMonth').onclick=()=>{
-  current=new Date(current.getFullYear(),current.getMonth()-1,1);
-  renderCalendar();
-};
-document.getElementById('nextMonth').onclick=()=>{
-  current=new Date(current.getFullYear(),current.getMonth()+1,1);
-  renderCalendar();
-};
+  async function saveEvent(key, status) {
+    const previous = state.events[key];
+    state.events[key] = status;
+    render();
 
-(async function initSchedule(){
-  const {data}=await db.auth.getSession();
-  signedInUser=data.session?.user||null;
-  scheduleEditing=false;
-  setAdminUI();
-  await loadSchedule();
+    const { error } = await client
+      .from(CONFIG.table)
+      .upsert(
+        {
+          day: key,
+          status,
+          memo: '',
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'day' }
+      );
 
-  db.auth.onAuthStateChange((_event,session)=>{
-    signedInUser=session?.user||null;
-    if(!signedInUser) scheduleEditing=false;
-    setAdminUI();
+    if (error) {
+      if (previous) state.events[key] = previous;
+      else delete state.events[key];
+      render();
+
+      const detail = describeError(error);
+      console.error('[calendar] save failed:', error);
+      toast(`저장 실패: ${detail}`, true);
+      return false;
+    }
+
+    toast('일정이 저장되었습니다.');
+    return true;
+  }
+
+  async function resetEvent(key) {
+    const previous = state.events[key];
+
+    const { error } = await client
+      .from(CONFIG.table)
+      .delete()
+      .eq('day', key);
+
+    if (error) {
+      console.error('[calendar] reset failed:', error);
+      toast(`초기화 실패: ${describeError(error)}`, true);
+      return false;
+    }
+
+    if (DEFAULTS[key]) state.events[key] = DEFAULTS[key];
+    else delete state.events[key];
+
+    if (!state.events[key] && previous) delete state.events[key];
+    render();
+    toast('기본 상태로 되돌렸습니다.');
+    return true;
+  }
+
+  function render() {
+    if (!els.grid || !els.monthTitle) return;
+
+    const year = state.month.getFullYear();
+    const month = state.month.getMonth();
+    const today = new Date();
+    const todayKey = dateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+    els.monthTitle.textContent = `${year}년 ${month + 1}월`;
+
+    const cells = ['일', '월', '화', '수', '목', '금', '토']
+      .map(day => `<div class="dow">${day}</div>`);
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const previousLastDate = new Date(year, month, 0).getDate();
+
+    for (let i = firstDay - 1; i >= 0; i--) {
+      cells.push(`<div class="day muted"><strong>${previousLastDate - i}</strong></div>`);
+    }
+
+    for (let day = 1; day <= lastDate; day++) {
+      const key = dateKey(year, month, day);
+      const status = statusFor(key);
+      const todayClass = key === todayKey ? ' today' : '';
+
+      cells.push(`
+        <button class="day${todayClass}" data-date="${key}" type="button"
+          ${state.editing ? '' : 'disabled'} aria-label="${year}년 ${month + 1}월 ${day}일 ${LABELS[status]}">
+          <strong>${day}</strong>
+          <span class="status ${status}">${LABELS[status]}</span>
+        </button>
+      `);
+    }
+
+    const trailing = (7 - ((firstDay + lastDate) % 7)) % 7;
+    for (let day = 1; day <= trailing; day++) {
+      cells.push(`<div class="day muted"><strong>${day}</strong></div>`);
+    }
+
+    els.grid.innerHTML = cells.join('');
+    updateNextOpen();
+  }
+
+  function updateNextOpen() {
+    if (!els.nextOpen) return;
+
+    const probe = new Date();
+    probe.setHours(0, 0, 0, 0);
+
+    for (let i = 0; i < 730; i++) {
+      const key = dateKey(probe.getFullYear(), probe.getMonth(), probe.getDate());
+      if (statusFor(key) === 'available') {
+        els.nextOpen.textContent = `${probe.getMonth() + 1}월 ${probe.getDate()}일`;
+        return;
+      }
+      probe.setDate(probe.getDate() + 1);
+    }
+
+    els.nextOpen.textContent = '확인 필요';
+  }
+
+  function openModal(key, cell) {
+    if (!state.editing || !state.user || !els.modal || !els.modalDialog) return;
+
+    state.selectedDate = key;
+    const [year, month, day] = key.split('-').map(Number);
+    if (els.dateLabel) els.dateLabel.textContent = `${year}년 ${month}월 ${day}일`;
+
+    els.modal.classList.add('show');
+    els.modal.setAttribute('aria-hidden', 'false');
+
+    requestAnimationFrame(() => {
+      const panelRect = els.panel.getBoundingClientRect();
+      const cellRect = cell.getBoundingClientRect();
+      const dialogRect = els.modalDialog.getBoundingClientRect();
+      const margin = 12;
+      const gap = 12;
+
+      let left = cellRect.left - panelRect.left + cellRect.width / 2 - dialogRect.width / 2;
+      left = Math.max(margin, Math.min(left, panelRect.width - dialogRect.width - margin));
+
+      let top = cellRect.top - panelRect.top - dialogRect.height - gap;
+      if (top < margin) top = cellRect.bottom - panelRect.top + gap;
+      top = Math.max(margin, Math.min(top, panelRect.height - dialogRect.height - margin));
+
+      els.modalDialog.style.left = `${left}px`;
+      els.modalDialog.style.top = `${top}px`;
+      els.modalDialog.style.transform = 'none';
+    });
+  }
+
+  function closeModal() {
+    if (!els.modal) return;
+    els.modal.classList.remove('show');
+    els.modal.setAttribute('aria-hidden', 'true');
+    state.selectedDate = null;
+  }
+
+  async function login() {
+    const password = prompt('관리자 비밀번호를 입력하세요.');
+    if (!password) return;
+
+    const { data, error } = await client.auth.signInWithPassword({
+      email: CONFIG.adminEmail,
+      password
+    });
+
+    if (error) {
+      console.error('[calendar] login failed:', error);
+      alert(`로그인 실패: ${describeError(error)}`);
+      return;
+    }
+
+    state.user = data.user;
+    state.editing = true;
+    updateAdminUI();
+    toast('관리자 편집 모드가 켜졌습니다.');
+  }
+
+  function bindEvents() {
+    els.prevBtn?.addEventListener('click', () => {
+      state.month = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1);
+      render();
+    });
+
+    els.nextBtn?.addEventListener('click', () => {
+      state.month = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 1);
+      render();
+    });
+
+    els.editBtn?.addEventListener('click', async () => {
+      if (!state.user) {
+        await login();
+        return;
+      }
+      state.editing = !state.editing;
+      updateAdminUI();
+    });
+
+    els.logoutBtn?.addEventListener('click', async () => {
+      await client.auth.signOut();
+      state.user = null;
+      state.editing = false;
+      updateAdminUI();
+      toast('로그아웃했습니다.');
+    });
+
+    els.grid?.addEventListener('click', event => {
+      const cell = event.target.closest('.day[data-date]');
+      if (cell) openModal(cell.dataset.date, cell);
+    });
+
+    document.querySelectorAll('.schedule-choice').forEach(button => {
+      button.addEventListener('click', async () => {
+        const key = state.selectedDate;
+        if (!key || !state.user) return;
+
+        const status = button.dataset.status;
+        closeModal();
+
+        if (status === 'clear') await resetEvent(key);
+        else if (LABELS[status]) await saveEvent(key, status);
+      });
+    });
+
+    els.closeBtn?.addEventListener('click', closeModal);
+
+    els.modal?.addEventListener('click', event => {
+      if (event.target === els.modal) closeModal();
+    });
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') closeModal();
+    });
+  }
+
+  async function init() {
+    bindEvents();
+
+    const { data } = await client.auth.getSession();
+    state.user = data.session?.user || null;
+    state.editing = false;
+
+    updateAdminUI();
+    await loadEvents();
+
+    client.auth.onAuthStateChange((_event, session) => {
+      state.user = session?.user || null;
+      if (!state.user) state.editing = false;
+      updateAdminUI();
+    });
+
+    window.setInterval(() => loadEvents({ silent: true }), CONFIG.refreshMs);
+  }
+
+  init().catch(error => {
+    console.error('[calendar] init failed:', error);
+    toast(`달력 초기화 실패: ${describeError(error)}`, true);
   });
-
-  // 열린 페이지도 최신 상태를 유지하도록 30초마다 조용히 갱신
-  setInterval(()=>loadSchedule(true),30000);
 })();
 
 // 신청 양식 연동 및 복사
