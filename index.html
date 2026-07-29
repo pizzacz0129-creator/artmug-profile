@@ -1024,6 +1024,61 @@ button,input,select,textarea{font:inherit}
 }
 </style>
 
+
+<style>
+/* 모바일 견적 계산기 전체 항목 강제 표시 */
+@media (max-width:700px){
+  #calculator .panel.calc-box,
+  #calculator .calc-grid{
+    display:block!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+
+  #calculator .calc-grid > .calc-row,
+  #calculator .calc-grid > .calc-note,
+  #calculator .calc-grid > .total-bar{
+    display:grid!important;
+    position:relative!important;
+    visibility:visible!important;
+    opacity:1!important;
+    transform:none!important;
+    height:auto!important;
+    min-height:0!important;
+    max-height:none!important;
+    overflow:visible!important;
+    margin-top:14px!important;
+  }
+
+  #calculator .calc-grid > .calc-row:first-child{
+    margin-top:0!important;
+  }
+
+  #calculator .calc-grid > .calc-note{
+    display:block!important;
+  }
+
+  #calculator .calc-grid > .total-bar{
+    grid-template-columns:1fr!important;
+  }
+
+  #calculator .calc-grid > .breakdown{
+    position:relative!important;
+    height:auto!important;
+    max-height:none!important;
+    overflow:visible!important;
+  }
+
+  #calculator .calc-row{
+    grid-template-columns:1fr!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <nav class="floating-nav">
@@ -1044,8 +1099,7 @@ button,input,select,textarea{font:inherit}
 <header class="hero" id="top">
 <div class="wrapper">
 <div class="hero-card">
-<div class="kicker">VTUBER VIDEO EDITOR</div>
-<h1>VTuber 티키타카에 특화된<br>영상 편집</h1>
+<h1>티키타카에 특화된<br>영상 편집</h1>
 <p>컷 편집부터 자막·효과·상황 연출까지<br>영상의 재미가 시청자에게 정확히 전달되도록 편집합니다.</p>
 <div class="actions">
 <a class="btn btn-primary" href="#calculator">예상 견적 계산하기</a>
@@ -1336,6 +1390,7 @@ button,input,select,textarea{font:inherit}
 </section>
 </main>
 <div class="modal" id="modal"><img alt="" id="modalImg"></div>
+<footer class="footer">© </footer>
 
 
 
@@ -2304,6 +2359,52 @@ document.addEventListener("click", function (event) {
   event.preventDefault();
   event.stopImmediatePropagation();
 }, true);
+</script>
+
+
+<script>
+/* 아트머그 모바일 웹뷰에서 계산기 하단 항목이 숨는 현상 보정 */
+(function(){
+  function restoreCalculator(){
+    var grid=document.querySelector('#calculator .calc-grid');
+    if(!grid) return;
+
+    grid.style.setProperty('display','block','important');
+    grid.style.setProperty('height','auto','important');
+    grid.style.setProperty('max-height','none','important');
+    grid.style.setProperty('overflow','visible','important');
+
+    Array.from(grid.children).forEach(function(el,index){
+      if(el.classList.contains('breakdown') && !el.classList.contains('show')){
+        return;
+      }
+
+      var display='block';
+      if(el.classList.contains('calc-row') || el.classList.contains('total-bar')){
+        display='grid';
+      }
+
+      el.style.setProperty('display',display,'important');
+      el.style.setProperty('visibility','visible','important');
+      el.style.setProperty('opacity','1','important');
+      el.style.setProperty('height','auto','important');
+      el.style.setProperty('max-height','none','important');
+      el.style.setProperty('overflow','visible','important');
+
+      if(index>0 && !el.classList.contains('breakdown')){
+        el.style.setProperty('margin-top','14px','important');
+      }
+    });
+
+    window.dispatchEvent(new Event('resize'));
+  }
+
+  window.addEventListener('load',restoreCalculator);
+  document.addEventListener('DOMContentLoaded',restoreCalculator);
+  [0,150,500,1200,2500].forEach(function(delay){
+    setTimeout(restoreCalculator,delay);
+  });
+})();
 </script>
 
 </body></html>
