@@ -862,6 +862,80 @@ button,input,select,textarea{font:inherit}
 }
 </style>
 
+
+<style>
+/* 완성 길이: 3~8분까지 6개 항목만 보이고 이후는 내부 스크롤 */
+.minute-select{position:relative;width:100%}
+.minute-select-button{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  text-align:left;
+  cursor:pointer;
+  background:#fff;
+}
+.minute-select-button::after{
+  content:"";
+  width:8px;
+  height:8px;
+  border-right:2px solid #222;
+  border-bottom:2px solid #222;
+  transform:rotate(45deg) translateY(-2px);
+  flex:none;
+  margin-left:12px;
+}
+.minute-select.open .minute-select-button::after{
+  transform:rotate(225deg) translate(-2px,-2px);
+}
+.minute-native-select{
+  position:absolute!important;
+  width:1px!important;
+  height:1px!important;
+  opacity:0!important;
+  pointer-events:none!important;
+}
+.minute-select-menu{
+  position:absolute;
+  left:0;
+  right:0;
+  top:calc(100% + 6px);
+  z-index:200;
+  display:none;
+  max-height:258px; /* 약 6개 항목 */
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  padding:5px;
+  background:#fff;
+  border:1px solid #b8b8b8;
+  border-radius:10px;
+  box-shadow:0 14px 32px rgba(0,0,0,.18);
+}
+.minute-select.open .minute-select-menu{display:block}
+.minute-option{
+  display:block;
+  width:100%;
+  min-height:41px;
+  padding:9px 12px;
+  border:0;
+  border-radius:7px;
+  background:#fff;
+  text-align:left;
+  font-weight:700;
+  cursor:pointer;
+}
+.minute-option:hover,
+.minute-option:focus,
+.minute-option.selected{
+  background:#2473dc;
+  color:#fff;
+  outline:none;
+}
+.minute-option.minute-none{
+  margin-top:5px;
+  border-top:1px solid #e5e5e5;
+}
+</style>
+
 </head>
 <body>
 <nav class="floating-nav">
@@ -977,107 +1051,107 @@ button,input,select,textarea{font:inherit}
 <span><i class="dot" style="background:#e9b636"></i>작업 중</span>
 <span><i class="dot" style="background:#aaa"></i>휴무</span>
 </div>
-<div class="cal-nav"><button id="prevMonth">‹</button><h3 id="monthTitle">2026년 8월</h3><button id="nextMonth">›</button></div>
-<div class="next-open">다음 신규 작업 가능일 <strong id="nextOpen">8월 4일</strong></div>
+<div class="cal-nav"><button id="prevMonth">‹</button><h3 id="monthTitle">2026년 7월</h3><button id="nextMonth">›</button></div>
+<div class="next-open">다음 신규 작업 가능일 <strong id="nextOpen">8월 1일</strong></div>
 </div>
-<div class="cal-grid" id="calendarGrid"><div class="dow">일</div><div class="dow">월</div><div class="dow">화</div><div class="dow">수</div><div class="dow">목</div><div class="dow">금</div><div class="dow">토</div><div class="day muted"><strong>26</strong></div><div class="day muted"><strong>27</strong></div><div class="day muted"><strong>28</strong></div><div class="day muted"><strong>29</strong></div><div class="day muted"><strong>30</strong></div><div class="day muted"><strong>31</strong></div><div class="day" data-date="2026-08-01" tabindex="0">
+<div class="cal-grid" id="calendarGrid"><div class="dow">일</div><div class="dow">월</div><div class="dow">화</div><div class="dow">수</div><div class="dow">목</div><div class="dow">금</div><div class="dow">토</div><div class="day muted"><strong>28</strong></div><div class="day muted"><strong>29</strong></div><div class="day muted"><strong>30</strong></div><div class="day" data-date="2026-07-01" tabindex="0">
         <strong>1</strong>
-        <span class="status booked">예약 완료</span>
-      </div><div class="day" data-date="2026-08-02" tabindex="0">
+        <span class="status available">예약 가능</span>
+      </div><div class="day" data-date="2026-07-02" tabindex="0">
         <strong>2</strong>
-        <span class="status booked">예약 완료</span>
-      </div><div class="day" data-date="2026-08-03" tabindex="0">
+        <span class="status available">예약 가능</span>
+      </div><div class="day" data-date="2026-07-03" tabindex="0">
         <strong>3</strong>
-        <span class="status booked">예약 완료</span>
-      </div><div class="day" data-date="2026-08-04" tabindex="0">
+        <span class="status available">예약 가능</span>
+      </div><div class="day" data-date="2026-07-04" tabindex="0">
         <strong>4</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-05" tabindex="0">
+      </div><div class="day" data-date="2026-07-05" tabindex="0">
         <strong>5</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-06" tabindex="0">
+      </div><div class="day" data-date="2026-07-06" tabindex="0">
         <strong>6</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-07" tabindex="0">
+      </div><div class="day" data-date="2026-07-07" tabindex="0">
         <strong>7</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-08" tabindex="0">
+      </div><div class="day" data-date="2026-07-08" tabindex="0">
         <strong>8</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-09" tabindex="0">
+      </div><div class="day" data-date="2026-07-09" tabindex="0">
         <strong>9</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-10" tabindex="0">
+      </div><div class="day" data-date="2026-07-10" tabindex="0">
         <strong>10</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-11" tabindex="0">
+      </div><div class="day" data-date="2026-07-11" tabindex="0">
         <strong>11</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-12" tabindex="0">
+      </div><div class="day" data-date="2026-07-12" tabindex="0">
         <strong>12</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-13" tabindex="0">
+      </div><div class="day" data-date="2026-07-13" tabindex="0">
         <strong>13</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-14" tabindex="0">
+      </div><div class="day" data-date="2026-07-14" tabindex="0">
         <strong>14</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-15" tabindex="0">
+      </div><div class="day" data-date="2026-07-15" tabindex="0">
         <strong>15</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-16" tabindex="0">
+      </div><div class="day" data-date="2026-07-16" tabindex="0">
         <strong>16</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-17" tabindex="0">
+      </div><div class="day" data-date="2026-07-17" tabindex="0">
         <strong>17</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-18" tabindex="0">
+      </div><div class="day" data-date="2026-07-18" tabindex="0">
         <strong>18</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-19" tabindex="0">
+      </div><div class="day" data-date="2026-07-19" tabindex="0">
         <strong>19</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-20" tabindex="0">
+      </div><div class="day" data-date="2026-07-20" tabindex="0">
         <strong>20</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-21" tabindex="0">
+      </div><div class="day" data-date="2026-07-21" tabindex="0">
         <strong>21</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-22" tabindex="0">
+      </div><div class="day" data-date="2026-07-22" tabindex="0">
         <strong>22</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-23" tabindex="0">
+      </div><div class="day" data-date="2026-07-23" tabindex="0">
         <strong>23</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-24" tabindex="0">
+      </div><div class="day" data-date="2026-07-24" tabindex="0">
         <strong>24</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-25" tabindex="0">
+      </div><div class="day" data-date="2026-07-25" tabindex="0">
         <strong>25</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-26" tabindex="0">
+      </div><div class="day" data-date="2026-07-26" tabindex="0">
         <strong>26</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-27" tabindex="0">
+      </div><div class="day" data-date="2026-07-27" tabindex="0">
         <strong>27</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-28" tabindex="0">
+      </div><div class="day" data-date="2026-07-28" tabindex="0">
         <strong>28</strong>
         <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-29" tabindex="0">
+      </div><div class="day" data-date="2026-07-29" tabindex="0">
         <strong>29</strong>
-        <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-30" tabindex="0">
+        <span class="status working">작업 중</span>
+      </div><div class="day today" data-date="2026-07-30" tabindex="0">
         <strong>30</strong>
-        <span class="status available">예약 가능</span>
-      </div><div class="day" data-date="2026-08-31" tabindex="0">
+        <span class="status working">작업 중</span>
+      </div><div class="day" data-date="2026-07-31" tabindex="0">
         <strong>31</strong>
-        <span class="status available">예약 가능</span>
-      </div><div class="day muted"><strong>1</strong></div><div class="day muted"><strong>2</strong></div><div class="day muted"><strong>3</strong></div><div class="day muted"><strong>4</strong></div><div class="day muted"><strong>5</strong></div></div>
+        <span class="status working">작업 중</span>
+      </div><div class="day muted"><strong>1</strong></div></div>
 <div class="schedule-modal" id="scheduleModal" aria-hidden="true">
-  <div class="schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="scheduleDialogTitle" style="left: 26.7109px; top: 427.234px; transform: none;">
+  <div class="schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="scheduleDialogTitle" style="left: 563.273px; top: 207.234px; transform: none;">
     <h3 id="scheduleDialogTitle">일정 상태 선택</h3>
-    <p class="date-label" id="scheduleDateLabel">2026년 8월 3일</p>
+    <p class="date-label" id="scheduleDateLabel">2026년 7월 31일</p>
     <div class="schedule-choices">
       <button class="schedule-choice available" data-status="available" type="button">예약 가능</button>
       <button class="schedule-choice booked" data-status="booked" type="button">예약 완료</button>
@@ -1087,7 +1161,7 @@ button,input,select,textarea{font:inherit}
     </div>
     <button class="schedule-close" id="scheduleCloseBtn" type="button">닫기</button>
   </div>
-</div><div class="schedule-toast show" id="scheduleToast">일정이 변경되었습니다.</div></div>
+</div><div class="schedule-toast" id="scheduleToast">일정이 변경되었습니다.</div></div>
 </div>
 </section>
 <section class="section" id="price">
@@ -1105,15 +1179,27 @@ button,input,select,textarea{font:inherit}
 <div class="section-head"><div class="kicker">06 · ESTIMATE</div><h2>견적 계산기</h2><p class="desc">목록에서 항목을 선택하면 예상 금액이 계산됩니다.</p></div>
 <div class="panel calc-box">
 <div class="calc-grid">
-<div class="calc-row"><label>희망 완성 길이</label><select class="field" id="targetMinutes"><option value="0">없음</option><option value="1">1분</option><option value="2">2분</option><option value="3">3분</option><option value="4">4분</option><option value="5">5분</option><option value="6">6분</option><option value="7">7분</option><option value="8">8분</option><option value="9">9분</option><option value="10">10분</option><option value="11">11분</option><option value="12">12분</option><option value="13">13분</option><option value="14">14분</option><option value="15">15분</option><option value="16">16분</option><option value="17">17분</option><option value="18">18분</option><option value="19">19분</option><option value="20">20분</option><option value="21">21분</option><option value="22">22분</option><option value="23">23분</option><option value="24">24분</option><option value="25">25분</option><option value="26">26분</option><option value="27">27분</option><option value="28">28분</option><option value="29">29분</option><option value="30">30분</option></select></div>
+<div class="calc-row"><label>희망 완성 길이</label>
+<div class="minute-select" id="minuteSelect">
+  <button type="button" class="field minute-select-button" id="minuteSelectButton"
+          aria-haspopup="listbox" aria-expanded="false">4분</button>
+  <div class="minute-select-menu" id="minuteSelectMenu" role="listbox">
+    <button type="button" class="minute-option" data-value="3" role="option" aria-selected="false">3분</button><button type="button" class="minute-option selected" data-value="4" role="option" aria-selected="true">4분</button><button type="button" class="minute-option" data-value="5" role="option" aria-selected="false">5분</button><button type="button" class="minute-option" data-value="6" role="option" aria-selected="false">6분</button><button type="button" class="minute-option" data-value="7" role="option" aria-selected="false">7분</button><button type="button" class="minute-option" data-value="8" role="option" aria-selected="false">8분</button><button type="button" class="minute-option" data-value="9" role="option" aria-selected="false">9분</button><button type="button" class="minute-option" data-value="10" role="option" aria-selected="false">10분</button><button type="button" class="minute-option" data-value="11" role="option" aria-selected="false">11분</button><button type="button" class="minute-option" data-value="12" role="option" aria-selected="false">12분</button><button type="button" class="minute-option" data-value="13" role="option" aria-selected="false">13분</button><button type="button" class="minute-option" data-value="14" role="option" aria-selected="false">14분</button><button type="button" class="minute-option" data-value="15" role="option" aria-selected="false">15분</button><button type="button" class="minute-option" data-value="16" role="option" aria-selected="false">16분</button><button type="button" class="minute-option" data-value="17" role="option" aria-selected="false">17분</button><button type="button" class="minute-option" data-value="18" role="option" aria-selected="false">18분</button><button type="button" class="minute-option" data-value="19" role="option" aria-selected="false">19분</button><button type="button" class="minute-option" data-value="20" role="option" aria-selected="false">20분</button><button type="button" class="minute-option" data-value="21" role="option" aria-selected="false">21분</button><button type="button" class="minute-option" data-value="22" role="option" aria-selected="false">22분</button><button type="button" class="minute-option" data-value="23" role="option" aria-selected="false">23분</button><button type="button" class="minute-option" data-value="24" role="option" aria-selected="false">24분</button><button type="button" class="minute-option" data-value="25" role="option" aria-selected="false">25분</button><button type="button" class="minute-option" data-value="26" role="option" aria-selected="false">26분</button><button type="button" class="minute-option" data-value="27" role="option" aria-selected="false">27분</button><button type="button" class="minute-option" data-value="28" role="option" aria-selected="false">28분</button><button type="button" class="minute-option" data-value="29" role="option" aria-selected="false">29분</button><button type="button" class="minute-option" data-value="30" role="option" aria-selected="false">30분</button>
+    <button type="button" class="minute-option minute-none" data-value="0" role="option" aria-selected="false">없음</button>
+  </div>
+  <select class="field minute-native-select" id="targetMinutes" aria-hidden="true" tabindex="-1">
+    <option value="0">없음</option><option value="3">3분</option><option value="4" selected>4분</option><option value="5">5분</option><option value="6">6분</option><option value="7">7분</option><option value="8">8분</option><option value="9">9분</option><option value="10">10분</option><option value="11">11분</option><option value="12">12분</option><option value="13">13분</option><option value="14">14분</option><option value="15">15분</option><option value="16">16분</option><option value="17">17분</option><option value="18">18분</option><option value="19">19분</option><option value="20">20분</option><option value="21">21분</option><option value="22">22분</option><option value="23">23분</option><option value="24">24분</option><option value="25">25분</option><option value="26">26분</option><option value="27">27분</option><option value="28">28분</option><option value="29">29분</option><option value="30">30분</option>
+  </select>
+</div>
+</div>
 <div class="calc-row"><label>함께 확인할 시점 수</label><select class="field" id="views"><option value="1">1시점</option><option value="2">2시점</option><option value="3">3시점</option><option value="4">4시점</option></select></div>
 <div class="calc-row"><label>영상 출연 인원</label><select class="field" id="people"><option value="1">1명</option><option value="2">2명</option><option value="3">3명</option><option value="4">4명</option><option value="5">5명 이상</option></select></div>
 <div class="calc-note">※ 시점 추가 비용이 적용되는 경우, 영상 출연 인원 추가 비용은 중복 계산되지 않습니다.</div>
 <div class="total-bar">
-<div class="total-box"><span>총 예상 금액</span><strong id="totalPrice">29,000원</strong></div>
+<div class="total-box"><span>총 예상 금액</span><strong id="totalPrice">0원</strong></div>
 <button class="confirm-btn" id="toggleBreakdown">최종 금액 확인하기</button>
 </div>
-<div class="breakdown" id="breakdown"><div class="b-row"><span>기본 편집비 (1분)</span><strong>17,000원</strong></div><div class="b-row"><span>합방 인원 추가</span><strong>12,000원</strong></div></div>
+<div class="breakdown" id="breakdown"><div class="b-row"><span>희망 완성 길이 없음</span><strong>0원</strong></div></div>
 </div>
 </div>
 </div>
@@ -1164,6 +1250,7 @@ button,input,select,textarea{font:inherit}
 </section>
 </main>
 <div class="modal" id="modal"><img alt="" id="modalImg"></div>
+<footer class="footer">© VTuber Video Editor</footer>
 
 
 
@@ -1241,7 +1328,7 @@ calculate();
 document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('breakdown').classList.toggle('show');
 
 // 달력
-const scheduleDefaults={"2026-07-29":"working","2026-07-30":"working","2026-07-31":"working","2026-08-01":"booked","2026-08-02":"booked","2026-08-03":"booked","2026-08-04":"available","2026-08-05":"available","2026-08-06":"available","2026-08-07":"available","2026-08-08":"available","2026-08-09":"available","2026-08-10":"available","2026-08-11":"available","2026-08-12":"available","2026-08-15":"available"};
+const scheduleDefaults={"2026-07-29":"working","2026-07-30":"working","2026-07-31":"working","2026-08-01":"available","2026-08-02":"available","2026-08-03":"available","2026-08-04":"available","2026-08-05":"available","2026-08-06":"available","2026-08-07":"available","2026-08-08":"available","2026-08-09":"available","2026-08-10":"available","2026-08-11":"available","2026-08-12":"available","2026-08-15":"available"};
 const scheduleStorageKey='artmug-schedule-v45';
 let scheduleData={...scheduleDefaults};
 let savedSchedule={};
@@ -1865,6 +1952,58 @@ html.artmug-embedded .mobile-bar {
   setTimeout(reportHeight,300);
   setTimeout(reportHeight,1200);
 })();
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const wrap = document.getElementById("minuteSelect");
+  const button = document.getElementById("minuteSelectButton");
+  const menu = document.getElementById("minuteSelectMenu");
+  const nativeSelect = document.getElementById("targetMinutes");
+  if(!wrap || !button || !menu || !nativeSelect) return;
+
+  function closeMinuteMenu(){
+    wrap.classList.remove("open");
+    button.setAttribute("aria-expanded","false");
+  }
+
+  button.addEventListener("click", function(e){
+    e.preventDefault();
+    const opening = !wrap.classList.contains("open");
+    if(opening){
+      wrap.classList.add("open");
+      button.setAttribute("aria-expanded","true");
+      menu.scrollTop = 0; // 열면 항상 3~8분부터 표시
+    }else{
+      closeMinuteMenu();
+    }
+  });
+
+  menu.querySelectorAll(".minute-option").forEach(function(option){
+    option.addEventListener("click", function(){
+      const value = option.dataset.value;
+      nativeSelect.value = value;
+      button.textContent = option.textContent;
+      menu.querySelectorAll(".minute-option").forEach(function(item){
+        const selected = item === option;
+        item.classList.toggle("selected", selected);
+        item.setAttribute("aria-selected", selected ? "true" : "false");
+      });
+      nativeSelect.dispatchEvent(new Event("input", {bubbles:true}));
+      nativeSelect.dispatchEvent(new Event("change", {bubbles:true}));
+      closeMinuteMenu();
+    });
+  });
+
+  document.addEventListener("click", function(e){
+    if(!wrap.contains(e.target)) closeMinuteMenu();
+  });
+
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape") closeMinuteMenu();
+  });
+});
 </script>
 
 </body></html>
