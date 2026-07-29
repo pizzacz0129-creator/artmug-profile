@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v33</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v34</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -1074,9 +1074,15 @@ sections.forEach(s=>observer.observe(s));
 </script>
 <script>
 (() => {
-  const onArtmug = /(^|\.)artmug\.kr$/i.test(location.hostname);
+  let isEmbedded = false;
 
-  if (onArtmug) {
+  try {
+    isEmbedded = window.self !== window.top;
+  } catch (_) {
+    isEmbedded = true;
+  }
+
+  if (isEmbedded) {
     document.documentElement.classList.add('artmug-host');
   }
 
