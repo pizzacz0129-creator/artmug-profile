@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v41</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v43</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -62,7 +62,7 @@ button,input,select,textarea{font:inherit}
 .tabs{display:flex;justify-content:center;gap:10px;margin-bottom:22px}
 .tab-btn{border:1px solid #e5d1b5;background:#fff;border-radius:13px;padding:12px 24px;font-weight:900;cursor:pointer}
 .tab-btn.active{background:var(--orange);border-color:var(--orange);color:#fff}
-.portfolio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.portfolio-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;position:relative}
 .portfolio-card{background:#fff;border:1px solid #ead7bc;border-radius:20px;overflow:hidden;box-shadow:0 8px 22px rgba(87,55,22,.08)}
 .thumb{aspect-ratio:16/9;background:linear-gradient(135deg,#ffd78a,#ffbba5);display:grid;place-items:center;position:relative;color:#85441f;font-weight:900}
 .thumb:after{content:"▶";display:grid;place-items:center;width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.9);font-size:22px}
@@ -73,7 +73,14 @@ button,input,select,textarea{font:inherit}
 .meta{font-size:14px;color:var(--muted);line-height:1.65}
 .tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:13px}
 .tag{font-size:12px;font-weight:850;padding:6px 9px;border:1px solid #efcf96;background:#fff7e8;border-radius:999px}
-.hidden{display:none!important}
+.hidden{
+  position:absolute!important;
+  left:-100000px!important;
+  top:0!important;
+  width:calc((100% - 14px)/2)!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
 
 .image-frame{background:#fff;padding:14px;border:1px solid var(--line);border-radius:22px;box-shadow:var(--shadow);cursor:zoom-in}
 .image-frame img{border-radius:14px;width:100%}
@@ -692,6 +699,13 @@ button,input,select,textarea{font:inherit}
 .floating-nav .nav-btn.top{
   min-height:48px;
 }
+
+@media(max-width:900px){
+  #portfolio .portfolio-card.hidden{
+    width:100%!important;
+  }
+}
+
 </style>
 
 <style>
