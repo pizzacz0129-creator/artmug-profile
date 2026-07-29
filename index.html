@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v34</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v36</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -159,7 +159,7 @@ button,input,select,textarea{font:inherit}
 
 .footer{text-align:center;color:var(--muted);padding:45px 20px 90px}
 
-@media(max-width:1250px){.floating-nav{display:none}}
+@media(max-width:700px){.floating-nav{display:none}}
 @media(max-width:900px){
   .subtitle-wrap,.price-grid,.portfolio-grid,.calc-grid,.consult-top,.apply-grid{grid-template-columns:1fr}
   .calc-row{grid-template-columns:1fr}
@@ -693,6 +693,30 @@ button,input,select,textarea{font:inherit}
   min-height:48px;
 }
 </style>
+
+<style>
+/* v35: iframe 감지 없이 실제 iframe 폭을 기준으로 사이드바 표시 */
+@media(min-width:701px) and (max-width:1250px){
+  .floating-nav{
+    display:grid!important;
+    right:8px!important;
+    width:118px!important;
+    gap:6px!important;
+    z-index:2147483000!important;
+  }
+  .floating-nav .nav-btn{
+    min-height:40px!important;
+    padding:8px 7px!important;
+    border-radius:11px!important;
+    font-size:11px!important;
+    line-height:1.2!important;
+  }
+  .mobile-bar{
+    display:none!important;
+  }
+}
+</style>
+
 </head>
 <body>
 <nav class="floating-nav">
@@ -700,10 +724,10 @@ button,input,select,textarea{font:inherit}
 <a class="nav-btn" href="#comments">시청자 반응</a>
 <a class="nav-btn" href="#subtitles">자막 안내</a>
 <a class="nav-btn" href="#process">편집 프로세스</a>
+<a class="nav-btn" href="#guide">이용 안내</a>
+<a class="nav-btn" href="#schedule">작업 일정</a>
 <a class="nav-btn" href="#price">가격 안내</a>
 <a class="nav-btn" href="#calculator">견적 계산기</a>
-<a class="nav-btn" href="#schedule">작업 일정</a>
-<a class="nav-btn" href="#guide">이용 안내</a>
 <a class="nav-btn apply" href="#apply">신청하기</a>
 <a class="nav-btn top" href="#top">⌃ TOP</a>
 </nav>
@@ -770,6 +794,42 @@ button,input,select,textarea{font:inherit}
 </div>
 </div>
 </section>
+<section class="section" id="guide">
+<div class="wrapper">
+<div class="section-head"><div class="kicker">08 · GUIDE</div><h2>상담 가능 시간 및 안내 사항</h2><p class="desc">문의 전에 확인하면 상담과 일정 확인이 더 빠르게 진행됩니다.</p></div>
+<div class="panel consult-panel">
+<div class="consult-top">
+<div class="consult-card"><h3>오전 10시 ~ 오후 10시</h3><p>모든 문의사항은 확인 순서대로 답변드립니다. 오전 10시 전에 보낸 문의는 상담 시작 후 순차적으로 확인합니다.</p></div>
+<div class="consult-card"><h3>시간 외 문의</h3><p>상담 시간이 아니어도 언제든 문의할 수 있습니다. 다음 상담 시간부터 순차적으로 답변드립니다.</p></div>
+<div class="consult-card"><h3>긴급 상담</h3><p>급한 수정이나 일정 문의는 메시지 앞에 [긴급]을 붙여주시면 확인 후 최대한 빠르게 답변드립니다.</p></div>
+</div>
+<div class="guide-list">
+<div class="guide-item"><div class="process-icon">◷</div><div><h3>원본 영상 길이 제한</h3><p>원본 영상이 2시간을 초과하는 경우에는 편집 작업을 수행하지 않고 있습니다.</p></div></div>
+<div class="guide-item"><div class="process-icon">▶</div><div><h3>쇼츠 의뢰는 받고 있지 않습니다</h3><p>롱폼 편집을 중심으로 작업하고 있습니다.</p></div></div>
+<div class="guide-item"><div class="process-icon">▣</div><div><h3>프로젝트 파일 양도 불가</h3><p>Premiere Pro 및 After Effects 프로젝트 파일은 제공하지 않으며, 최종 렌더링 영상만 전달합니다.</p></div></div>
+<div class="guide-item"><div class="process-icon">▧</div><div><h3>포트폴리오 사용 동의</h3><p>제작한 영상은 작업자의 포트폴리오로 사용할 수 있습니다. </p></div></div>
+</div>
+</div>
+</div>
+</section>
+<section class="section" id="schedule">
+<div class="wrapper">
+<div class="section-head"><div class="kicker">07 · SCHEDULE</div><h2>작업 현황 캘린더</h2><p class="desc">현재 작업 상태와 다음 신규 작업 가능일을 확인할 수 있습니다.</p></div>
+<div class="panel calendar-panel">
+<div class="cal-topline">
+<div class="legend-inline">
+<span><i class="dot" style="background:#62b976"></i>예약 가능</span>
+<span><i class="dot" style="background:#ef765e"></i>예약 완료</span>
+<span><i class="dot" style="background:#e9b636"></i>작업 중</span>
+<span><i class="dot" style="background:#aaa"></i>휴무</span>
+</div>
+<div class="cal-nav"><button id="prevMonth">‹</button><h3 id="monthTitle"></h3><button id="nextMonth">›</button></div>
+<div class="next-open">다음 신규 작업 가능일 <strong id="nextOpen">8월 3일</strong></div>
+</div>
+<div class="cal-grid" id="calendarGrid"></div>
+</div>
+</div>
+</section>
 <section class="section" id="price">
 <div class="wrapper">
 <div class="section-head"><div class="kicker">05 · PRICE</div><h2>가격 안내</h2><p class="desc">기본 요금과 추가 금액 기준입니다.</p></div>
@@ -794,42 +854,6 @@ button,input,select,textarea{font:inherit}
 <button class="confirm-btn" id="toggleBreakdown">최종 금액 확인하기</button>
 </div>
 <div class="breakdown" id="breakdown"></div>
-</div>
-</div>
-</div>
-</section>
-<section class="section" id="schedule">
-<div class="wrapper">
-<div class="section-head"><div class="kicker">07 · SCHEDULE</div><h2>작업 현황 캘린더</h2><p class="desc">현재 작업 상태와 다음 신규 작업 가능일을 확인할 수 있습니다.</p></div>
-<div class="panel calendar-panel">
-<div class="cal-topline">
-<div class="legend-inline">
-<span><i class="dot" style="background:#62b976"></i>예약 가능</span>
-<span><i class="dot" style="background:#ef765e"></i>예약 완료</span>
-<span><i class="dot" style="background:#e9b636"></i>작업 중</span>
-<span><i class="dot" style="background:#aaa"></i>휴무</span>
-</div>
-<div class="cal-nav"><button id="prevMonth">‹</button><h3 id="monthTitle"></h3><button id="nextMonth">›</button></div>
-<div class="next-open">다음 신규 작업 가능일 <strong id="nextOpen">8월 3일</strong></div>
-</div>
-<div class="cal-grid" id="calendarGrid"></div>
-</div>
-</div>
-</section>
-<section class="section" id="guide">
-<div class="wrapper">
-<div class="section-head"><div class="kicker">08 · GUIDE</div><h2>상담 가능 시간 및 안내 사항</h2><p class="desc">문의 전에 확인하면 상담과 일정 확인이 더 빠르게 진행됩니다.</p></div>
-<div class="panel consult-panel">
-<div class="consult-top">
-<div class="consult-card"><h3>오전 10시 ~ 오후 10시</h3><p>모든 문의사항은 확인 순서대로 답변드립니다. 오전 10시 전에 보낸 문의는 상담 시작 후 순차적으로 확인합니다.</p></div>
-<div class="consult-card"><h3>시간 외 문의</h3><p>상담 시간이 아니어도 언제든 문의할 수 있습니다. 다음 상담 시간부터 순차적으로 답변드립니다.</p></div>
-<div class="consult-card"><h3>긴급 상담</h3><p>급한 수정이나 일정 문의는 메시지 앞에 [긴급]을 붙여주시면 확인 후 최대한 빠르게 답변드립니다.</p></div>
-</div>
-<div class="guide-list">
-<div class="guide-item"><div class="process-icon">◷</div><div><h3>원본 영상 길이 제한</h3><p>원본 영상이 2시간을 초과하는 경우에는 편집 작업을 수행하지 않고 있습니다.</p></div></div>
-<div class="guide-item"><div class="process-icon">▶</div><div><h3>쇼츠 의뢰는 받고 있지 않습니다</h3><p>롱폼 편집을 중심으로 작업하고 있습니다.</p></div></div>
-<div class="guide-item"><div class="process-icon">▣</div><div><h3>프로젝트 파일 양도 불가</h3><p>Premiere Pro 및 After Effects 프로젝트 파일은 제공하지 않으며, 최종 렌더링 영상만 전달합니다.</p></div></div>
-<div class="guide-item"><div class="process-icon">▧</div><div><h3>포트폴리오 사용 동의</h3><p>제작한 영상은 작업자의 포트폴리오로 사용할 수 있습니다. </p></div></div>
 </div>
 </div>
 </div>
@@ -1074,15 +1098,9 @@ sections.forEach(s=>observer.observe(s));
 </script>
 <script>
 (() => {
-  let isEmbedded = false;
+  const onArtmug = /(^|\.)artmug\.kr$/i.test(location.hostname);
 
-  try {
-    isEmbedded = window.self !== window.top;
-  } catch (_) {
-    isEmbedded = true;
-  }
-
-  if (isEmbedded) {
+  if (onArtmug) {
     document.documentElement.classList.add('artmug-host');
   }
 
