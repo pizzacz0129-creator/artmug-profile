@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v46</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v47</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -1047,6 +1047,23 @@ button,input,select,textarea{font:inherit}
 </main>
 <div class="modal" id="modal"><img alt="" id="modalImg"/></div>
 <footer class="footer">© VTuber Video Editor · 아트머그 임베드 시안 v8</footer>
+
+<div class="schedule-modal" id="scheduleModal" aria-hidden="true">
+  <div class="schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="scheduleDialogTitle">
+    <h3 id="scheduleDialogTitle">일정 상태 선택</h3>
+    <p class="date-label" id="scheduleDateLabel"></p>
+    <div class="schedule-choices">
+      <button class="schedule-choice available" data-status="available" type="button">예약 가능</button>
+      <button class="schedule-choice booked" data-status="booked" type="button">예약 완료</button>
+      <button class="schedule-choice working" data-status="working" type="button">작업 중</button>
+      <button class="schedule-choice off" data-status="off" type="button">휴무</button>
+      <button class="schedule-choice clear" data-status="clear" type="button">기본값(예약 가능)으로 되돌리기</button>
+    </div>
+    <button class="schedule-close" id="scheduleCloseBtn" type="button">닫기</button>
+  </div>
+</div>
+<div class="schedule-toast" id="scheduleToast">저장되었습니다.</div>
+
 <script>
 const money=n=>new Intl.NumberFormat('ko-KR').format(n)+'원';
 
@@ -1549,21 +1566,6 @@ html.artmug-embedded .mobile-bar {
 </script>
 
 
-<div class="schedule-modal" id="scheduleModal" aria-hidden="true">
-  <div class="schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="scheduleDialogTitle">
-    <h3 id="scheduleDialogTitle">일정 상태 선택</h3>
-    <p class="date-label" id="scheduleDateLabel"></p>
-    <div class="schedule-choices">
-      <button class="schedule-choice available" data-status="available" type="button">예약 가능</button>
-      <button class="schedule-choice booked" data-status="booked" type="button">예약 완료</button>
-      <button class="schedule-choice working" data-status="working" type="button">작업 중</button>
-      <button class="schedule-choice off" data-status="off" type="button">휴무</button>
-      <button class="schedule-choice clear" data-status="clear" type="button">기본값(예약 가능)으로 되돌리기</button>
-    </div>
-    <button class="schedule-close" id="scheduleCloseBtn" type="button">닫기</button>
-  </div>
-</div>
-<div class="schedule-toast" id="scheduleToast">저장되었습니다.</div>
 
 </body>
 </html>
