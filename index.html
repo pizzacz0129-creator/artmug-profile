@@ -1570,17 +1570,20 @@ function showScheduleToast(message){
   showScheduleToast.timer=setTimeout(()=>toast.classList.remove('show'),2200);
 }
 async function adminLogin(){
-  const email=prompt('Supabase 관리자 이메일을 입력하세요.');
-  if(!email) return;
   const password=prompt('관리자 비밀번호를 입력하세요.');
   if(!password) return;
 
-  const {data,error}=await db.auth.signInWithPassword({email:email.trim(),password});
+  const {data,error}=await db.auth.signInWithPassword({
+    email:'pizzacz0129@gmail.com',
+    password
+  });
+
   if(error){
     console.error(error);
-    alert('로그인하지 못했습니다. 이메일·비밀번호 또는 Supabase Auth 사용자 등록을 확인하세요.');
+    alert('비밀번호가 맞지 않거나 관리자 계정 설정이 완료되지 않았습니다.');
     return;
   }
+
   signedInUser=data.user;
   scheduleEditing=true;
   setAdminUI();
