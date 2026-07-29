@@ -936,6 +936,49 @@ button,input,select,textarea{font:inherit}
 }
 </style>
 
+
+<style>
+/* Supabase 달력 및 모바일 제목 줄바꿈 보정 */
+#guide .section-head h2{
+  text-wrap:balance;
+  word-break:keep-all;
+  overflow-wrap:normal;
+}
+#schedulePanel:not(.is-editing) .day[data-date]{
+  cursor:default;
+}
+#schedulePanel.is-editing .day[data-date]{
+  cursor:pointer;
+}
+@media (max-width:560px){
+  #guide .section-head{
+    padding-left:4px;
+    padding-right:4px;
+  }
+  #guide .section-head h2{
+    max-width:none;
+    width:100%;
+    font-size:clamp(25px,8vw,31px);
+    line-height:1.28;
+    letter-spacing:-.065em;
+    word-break:keep-all;
+    overflow-wrap:normal;
+  }
+  #guide .section-head .desc{
+    word-break:keep-all;
+  }
+  .schedule-help{
+    word-break:keep-all;
+  }
+  .day{
+    min-height:56px;
+  }
+  .status{
+    margin-top:7px;
+  }
+}
+</style>
+
 </head>
 <body>
 <nav class="floating-nav">
@@ -1036,13 +1079,11 @@ button,input,select,textarea{font:inherit}
 <div class="section-head"><div class="kicker">07 · SCHEDULE</div><h2>작업 현황 캘린더</h2><p class="desc">현재 작업 상태와 다음 신규 작업 가능일을 확인할 수 있습니다.</p></div>
 <div class="panel calendar-panel" id="schedulePanel">
 <div class="schedule-toolbar">
-<button class="schedule-tool" id="scheduleEditBtn" type="button">⚙ 일정 편집</button>
-<button class="schedule-tool" id="scheduleResetBtn" type="button" hidden="">변경 초기화</button>
-<button class="schedule-tool save" id="scheduleSaveBtn" type="button" hidden="">💾 수정본 HTML 저장</button>
+<button class="schedule-tool" id="scheduleEditBtn" type="button">관리자 로그인</button>
+<button class="schedule-tool" id="scheduleLogoutBtn" type="button" hidden>로그아웃</button>
 </div>
-<div class="schedule-help">
-날짜를 클릭해 상태를 변경하세요. 수정 내용은 이 브라우저에 자동 저장됩니다.
-완료 후 <strong>수정본 HTML 저장</strong>을 누르면 일정이 포함된 <strong>index.html</strong>이 내려받아집니다.
+<div class="schedule-help" id="scheduleHelp">
+방문자는 달을 이동해 작업 가능 일정을 확인할 수 있습니다.
 </div>
 <div class="cal-topline">
 <div class="legend-inline">
@@ -1255,6 +1296,7 @@ button,input,select,textarea{font:inherit}
 
 
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const schedulePanelElement=document.getElementById('schedulePanel');
 const scheduleModalElement=document.getElementById('scheduleModal');
@@ -1327,23 +1369,19 @@ document.querySelectorAll('#calculator select').forEach(el=>el.addEventListener(
 calculate();
 document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('breakdown').classList.toggle('show');
 
-// 달력
+// 달력 · Supabase 연동
+const SUPABASE_URL='https://dwodundpgzywxdeujgsq.supabase.co';
+const SUPABASE_KEY='sb_publishable_jRrW5fZ7_sj1gQpf2V7PGQ_gD7oEiHL';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+
 const scheduleDefaults={"2026-07-29":"working","2026-07-30":"working","2026-07-31":"working","2026-08-01":"available","2026-08-02":"available","2026-08-03":"available","2026-08-04":"available","2026-08-05":"available","2026-08-06":"available","2026-08-07":"available","2026-08-08":"available","2026-08-09":"available","2026-08-10":"available","2026-08-11":"available","2026-08-12":"available","2026-08-15":"available"};
-const scheduleStorageKey='artmug-schedule-v45';
 let scheduleData={...scheduleDefaults};
-let savedSchedule={};
-
-try{
-  savedSchedule=JSON.parse(localStorage.getItem(scheduleStorageKey)||'{}');
-  scheduleData={...scheduleData,...savedSchedule};
-}catch(error){
-  console.warn('일정 저장 데이터를 읽지 못했습니다.',error);
-}
-
 const labels={available:'예약 가능',booked:'예약 완료',working:'작업 중',off:'휴무'};
-let current=new Date(2026,7,1);
+const now=new Date();
+let current=new Date(now.getFullYear(),now.getMonth(),1);
 let scheduleEditing=false;
 let selectedScheduleDate='';
+let signedInUser=null;
 
 function key(y,m,d){
   return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
@@ -1355,14 +1393,89 @@ function koreanDate(dateKey){
   const [y,m,d]=dateKey.split('-').map(Number);
   return `${y}년 ${m}월 ${d}일`;
 }
-function saveLocalSchedule(){
-  const changes={};
-  Object.keys(scheduleData).forEach(dateKey=>{
-    const value=scheduleData[dateKey];
-    const defaultValue=scheduleDefaults[dateKey]||'available';
-    if(value!==defaultValue) changes[dateKey]=value;
+function setScheduleHelp(message){
+  const help=document.getElementById('scheduleHelp');
+  if(help) help.textContent=message;
+}
+function setAdminUI(){
+  const edit=document.getElementById('scheduleEditBtn');
+  const logout=document.getElementById('scheduleLogoutBtn');
+  const panel=document.getElementById('schedulePanel');
+
+  if(signedInUser){
+    edit.textContent=scheduleEditing?'편집 종료':'일정 편집';
+    logout.hidden=false;
+    panel.classList.toggle('is-editing',scheduleEditing);
+    setScheduleHelp(scheduleEditing
+      ? '관리자 편집 모드입니다. 날짜를 눌러 상태를 변경하면 즉시 저장됩니다.'
+      : '관리자로 로그인했습니다. 일정 편집 버튼을 누르면 날짜를 수정할 수 있습니다.');
+  }else{
+    scheduleEditing=false;
+    edit.textContent='관리자 로그인';
+    logout.hidden=true;
+    panel.classList.remove('is-editing');
+    setScheduleHelp('방문자는 달을 이동해 작업 가능 일정을 확인할 수 있습니다.');
+  }
+  renderCalendar();
+}
+async function loadSchedule(silent=false){
+  const {data,error}=await db
+    .from('calendar_events')
+    .select('day,status')
+    .order('day',{ascending:true});
+
+  if(error){
+    console.error('일정을 불러오지 못했습니다.',error);
+    if(!silent) showScheduleToast('일정을 불러오지 못했습니다.');
+    return;
+  }
+
+  scheduleData={...scheduleDefaults};
+  (data||[]).forEach(row=>{
+    if(row.day&&labels[row.status]) scheduleData[row.day]=row.status;
   });
-  localStorage.setItem(scheduleStorageKey,JSON.stringify(changes));
+  renderCalendar();
+}
+async function saveScheduleStatus(dateKey,status){
+  const payload={
+    day:dateKey,
+    status:status,
+    updated_at:new Date().toISOString()
+  };
+  const {error}=await db
+    .from('calendar_events')
+    .upsert(payload,{onConflict:'day'});
+
+  if(error){
+    console.error('일정 저장 실패',error);
+    showScheduleToast('저장하지 못했습니다. 다시 로그인해 주세요.');
+    return false;
+  }
+  scheduleData[dateKey]=status;
+  renderCalendar();
+  showScheduleToast('일정이 저장되었습니다.');
+  return true;
+}
+async function clearScheduleStatus(dateKey){
+  const {error}=await db
+    .from('calendar_events')
+    .delete()
+    .eq('day',dateKey);
+
+  if(error){
+    console.error('일정 초기화 실패',error);
+    showScheduleToast('초기화하지 못했습니다.');
+    return false;
+  }
+
+  if(Object.prototype.hasOwnProperty.call(scheduleDefaults,dateKey)){
+    scheduleData[dateKey]=scheduleDefaults[dateKey];
+  }else{
+    delete scheduleData[dateKey];
+  }
+  renderCalendar();
+  showScheduleToast('기본 상태로 되돌렸습니다.');
+  return true;
 }
 function updateNextOpen(){
   const today=new Date();
@@ -1416,7 +1529,7 @@ function renderCalendar(){
   updateNextOpen();
 }
 function openScheduleModal(dateKey,sourceCell){
-  if(!scheduleEditing) return;
+  if(!scheduleEditing||!signedInUser) return;
   selectedScheduleDate=dateKey;
   document.getElementById('scheduleDateLabel').textContent=koreanDate(dateKey);
 
@@ -1433,16 +1546,11 @@ function openScheduleModal(dateKey,sourceCell){
     const dialogRect=dialog.getBoundingClientRect();
     const gap=12;
     const margin=12;
-
     let left=(cellRect.left-panelRect.left)+(cellRect.width/2)-(dialogRect.width/2);
     left=Math.max(margin,Math.min(left,panelRect.width-dialogRect.width-margin));
-
     let top=(cellRect.top-panelRect.top)-dialogRect.height-gap;
-    if(top<margin){
-      top=(cellRect.bottom-panelRect.top)+gap;
-    }
+    if(top<margin) top=(cellRect.bottom-panelRect.top)+gap;
     top=Math.max(margin,Math.min(top,panelRect.height-dialogRect.height-margin));
-
     dialog.style.left=left+'px';
     dialog.style.top=top+'px';
     dialog.style.transform='none';
@@ -1459,7 +1567,24 @@ function showScheduleToast(message){
   toast.textContent=message;
   toast.classList.add('show');
   clearTimeout(showScheduleToast.timer);
-  showScheduleToast.timer=setTimeout(()=>toast.classList.remove('show'),1800);
+  showScheduleToast.timer=setTimeout(()=>toast.classList.remove('show'),2200);
+}
+async function adminLogin(){
+  const email=prompt('Supabase 관리자 이메일을 입력하세요.');
+  if(!email) return;
+  const password=prompt('관리자 비밀번호를 입력하세요.');
+  if(!password) return;
+
+  const {data,error}=await db.auth.signInWithPassword({email:email.trim(),password});
+  if(error){
+    console.error(error);
+    alert('로그인하지 못했습니다. 이메일·비밀번호 또는 Supabase Auth 사용자 등록을 확인하세요.');
+    return;
+  }
+  signedInUser=data.user;
+  scheduleEditing=true;
+  setAdminUI();
+  showScheduleToast('관리자 편집 모드가 켜졌습니다.');
 }
 
 document.getElementById('calendarGrid').addEventListener('click',event=>{
@@ -1475,22 +1600,16 @@ document.getElementById('calendarGrid').addEventListener('keydown',event=>{
   }
 });
 document.querySelectorAll('.schedule-choice').forEach(button=>{
-  button.addEventListener('click',()=>{
-    if(!selectedScheduleDate) return;
+  button.addEventListener('click',async()=>{
+    if(!selectedScheduleDate||!signedInUser) return;
+    const dateKey=selectedScheduleDate;
     const status=button.dataset.status;
-    if(status==='clear'){
-      if(Object.prototype.hasOwnProperty.call(scheduleDefaults,selectedScheduleDate)){
-        scheduleData[selectedScheduleDate]=scheduleDefaults[selectedScheduleDate];
-      }else{
-        delete scheduleData[selectedScheduleDate];
-      }
-    }else{
-      scheduleData[selectedScheduleDate]=status;
-    }
-    saveLocalSchedule();
     closeScheduleModal();
-    renderCalendar();
-    showScheduleToast('일정이 변경되었습니다.');
+    if(status==='clear'){
+      await clearScheduleStatus(dateKey);
+    }else{
+      await saveScheduleStatus(dateKey,status);
+    }
   });
 });
 
@@ -1502,58 +1621,20 @@ document.addEventListener('keydown',event=>{
   if(event.key==='Escape') closeScheduleModal();
 });
 
-document.getElementById('scheduleEditBtn').onclick=()=>{
-  scheduleEditing=!scheduleEditing;
-  document.getElementById('schedulePanel').classList.toggle('is-editing',scheduleEditing);
-  document.getElementById('scheduleEditBtn').classList.toggle('active',scheduleEditing);
-  document.getElementById('scheduleEditBtn').textContent=scheduleEditing?'편집 종료':'⚙ 일정 편집';
-  document.getElementById('scheduleSaveBtn').hidden=!scheduleEditing;
-  document.getElementById('scheduleResetBtn').hidden=!scheduleEditing;
-  renderCalendar();
-};
-document.getElementById('scheduleResetBtn').onclick=()=>{
-  if(!confirm('이 브라우저에서 변경한 일정을 모두 초기화할까요?')) return;
-  localStorage.removeItem(scheduleStorageKey);
-  scheduleData={...scheduleDefaults};
-  renderCalendar();
-  showScheduleToast('변경 내용이 초기화되었습니다.');
-};
-
-function makeSavedHtml(){
-  const clone=document.documentElement.cloneNode(true);
-  clone.querySelector('#schedulePanel')?.classList.remove('is-editing');
-  clone.querySelector('#scheduleModal')?.classList.remove('show');
-
-  const edit=clone.querySelector('#scheduleEditBtn');
-  const save=clone.querySelector('#scheduleSaveBtn');
-  const reset=clone.querySelector('#scheduleResetBtn');
-  if(edit){
-    edit.textContent='⚙ 일정 편집';
-    edit.classList.remove('active');
+document.getElementById('scheduleEditBtn').onclick=async()=>{
+  if(!signedInUser){
+    await adminLogin();
+    return;
   }
-  if(save) save.hidden=true;
-  if(reset) reset.hidden=true;
-
-  let source='<!DOCTYPE html>\n'+clone.outerHTML;
-  const embedded=JSON.stringify(scheduleData);
-  source=source.replace(
-    /const scheduleDefaults=\{.*?\};/,
-    'const scheduleDefaults='+embedded+';'
-  );
-  return source;
-}
-document.getElementById('scheduleSaveBtn').onclick=()=>{
-  const source=makeSavedHtml();
-  const blob=new Blob([source],{type:'text/html;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement('a');
-  link.href=url;
-  link.download='index.html';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
-  showScheduleToast('수정된 index.html을 저장했습니다.');
+  scheduleEditing=!scheduleEditing;
+  setAdminUI();
+};
+document.getElementById('scheduleLogoutBtn').onclick=async()=>{
+  await db.auth.signOut();
+  signedInUser=null;
+  scheduleEditing=false;
+  setAdminUI();
+  showScheduleToast('로그아웃했습니다.');
 };
 
 document.getElementById('prevMonth').onclick=()=>{
@@ -1564,7 +1645,23 @@ document.getElementById('nextMonth').onclick=()=>{
   current=new Date(current.getFullYear(),current.getMonth()+1,1);
   renderCalendar();
 };
-renderCalendar();
+
+(async function initSchedule(){
+  const {data}=await db.auth.getSession();
+  signedInUser=data.session?.user||null;
+  scheduleEditing=false;
+  setAdminUI();
+  await loadSchedule();
+
+  db.auth.onAuthStateChange((_event,session)=>{
+    signedInUser=session?.user||null;
+    if(!signedInUser) scheduleEditing=false;
+    setAdminUI();
+  });
+
+  // 열린 페이지도 최신 상태를 유지하도록 30초마다 조용히 갱신
+  setInterval(()=>loadSchedule(true),30000);
+})();
 
 // 신청 양식 연동 및 복사
 const sourceAvailable=document.getElementById('sourceAvailable');
