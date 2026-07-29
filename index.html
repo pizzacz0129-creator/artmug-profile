@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v47</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v48</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -784,13 +784,14 @@ button,input,select,textarea{font:inherit}
 .day.today{box-shadow:inset 0 0 0 2px #2f2b28}
 .day.selected-date{outline:3px solid var(--orange)!important;outline-offset:-3px}
 .schedule-modal{
-  position:fixed;
+  position:absolute;
   inset:0;
-  z-index:2147483640;
+  z-index:50;
   display:none;
-  place-items:center;
-  padding:20px;
+  place-items:start center;
+  padding:82px 20px 20px;
   background:rgba(28,23,19,.58);
+  border-radius:inherit;
 }
 .schedule-modal.show{display:grid}
 .schedule-dialog{
@@ -829,10 +830,10 @@ button,input,select,textarea{font:inherit}
   cursor:pointer;
 }
 .schedule-toast{
-  position:fixed;
+  position:absolute;
   left:50%;
-  bottom:24px;
-  z-index:2147483641;
+  bottom:18px;
+  z-index:51;
   transform:translate(-50%,20px);
   opacity:0;
   pointer-events:none;
@@ -1065,6 +1066,16 @@ button,input,select,textarea{font:inherit}
 <div class="schedule-toast" id="scheduleToast">저장되었습니다.</div>
 
 <script>
+const schedulePanelElement=document.getElementById('schedulePanel');
+const scheduleModalElement=document.getElementById('scheduleModal');
+const scheduleToastElement=document.getElementById('scheduleToast');
+if(schedulePanelElement&&scheduleModalElement){
+  schedulePanelElement.appendChild(scheduleModalElement);
+}
+if(schedulePanelElement&&scheduleToastElement){
+  schedulePanelElement.appendChild(scheduleToastElement);
+}
+
 const money=n=>new Intl.NumberFormat('ko-KR').format(n)+'원';
 
 // 포트폴리오 탭
