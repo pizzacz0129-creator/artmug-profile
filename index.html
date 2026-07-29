@@ -1044,6 +1044,32 @@ button,input,select,textarea{font:inherit}
   #calculator .calc-row{padding:8px!important;}
 }
 </style>
+
+<style>
+/* v48 mobile section-title compression */
+@media (max-width:560px){
+  .section h2{
+    font-size:clamp(28px,8.5vw,34px)!important;
+    line-height:1.16!important;
+    letter-spacing:-.06em!important;
+  }
+
+  #comments .section-head h2{
+    font-size:clamp(26px,8vw,30px)!important;
+    line-height:1.12!important;
+    letter-spacing:-.075em!important;
+    white-space:nowrap!important;
+  }
+
+  .section-head{
+    margin-bottom:16px!important;
+  }
+
+  .section-head .desc{
+    line-height:1.6!important;
+  }
+}
+</style>
 </head>
 <body>
 <nav class="floating-nav">
