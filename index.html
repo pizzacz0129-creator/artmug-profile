@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v45</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v46</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -1291,8 +1291,7 @@ function makeSavedHtml(){
   if(save) save.hidden=true;
   if(reset) reset.hidden=true;
 
-  let source='<!DOCTYPE html>
-'+clone.outerHTML;
+  let source='<!DOCTYPE html>\n'+clone.outerHTML;
   const embedded=JSON.stringify(scheduleData);
   source=source.replace(
     /const scheduleDefaults=\{.*?\};/,
