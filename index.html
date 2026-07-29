@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v30</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v31</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -159,8 +159,29 @@ button,input,select,textarea{font:inherit}
 
 .footer{text-align:center;color:var(--muted);padding:45px 20px 90px}
 
-@media(max-width:1250px){.floating-nav{display:none}}
+/* v31: 데모 30의 기능은 그대로 두고, 중간 폭에서 사이드바만 복원 */
+@media(min-width:901px) and (max-width:1250px){
+  .floating-nav{
+    display:grid;
+    right:10px;
+    width:124px;
+    gap:6px;
+    z-index:80;
+  }
+  .floating-nav .nav-btn{
+    min-height:42px;
+    padding:9px 8px;
+    border-radius:12px;
+    font-size:12px;
+    line-height:1.25;
+    pointer-events:auto;
+  }
+  .floating-nav .nav-btn.top{
+    min-height:40px;
+  }
+}
 @media(max-width:900px){
+  .floating-nav{display:none!important}
   .subtitle-wrap,.price-grid,.portfolio-grid,.calc-grid,.consult-top,.apply-grid{grid-template-columns:1fr}
   .calc-row{grid-template-columns:1fr}
   .total-bar,.breakdown{grid-column:1}
