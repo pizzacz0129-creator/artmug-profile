@@ -1022,6 +1022,45 @@ button,input,select,textarea{font:inherit}
 .subtitle-wrap{gap:12px!important;padding:16px!important}
 }
 </style>
+
+<style>
+/* v50 mobile apply-only compact */
+@media (max-width:560px){
+
+/* 제목만 약간 축소 */
+.section h2{
+  font-size:clamp(31px,8vw,34px)!important;
+  line-height:1.15!important;
+}
+
+/* 신청 양식만 추가 압축 */
+#apply .apply-panel{
+  padding:14px!important;
+}
+#apply .apply-grid{
+  gap:8px!important;
+}
+#apply .field{
+  padding:10px 11px!important;
+}
+#apply textarea.field,
+#apply textarea{
+  min-height:74px!important;
+}
+#apply .field-help{
+  margin-top:3px!important;
+  line-height:1.3!important;
+  font-size:11px!important;
+}
+#apply .btn,
+#apply button{
+  padding:10px 14px!important;
+}
+#apply .copy-note{
+  margin-top:8px!important;
+}
+}
+</style>
 </head>
 <body>
 <nav class="floating-nav">
