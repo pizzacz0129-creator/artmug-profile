@@ -1930,19 +1930,7 @@ html.artmug-embedded .mobile-bar {
     window.parent.postMessage({type:'resizeIframe',height:height},'*');
   }
 
-  document.addEventListener('click',function(event){
-    if(!embedded() || window.innerWidth>700) return;
-    var link=event.target.closest('a[href^="#"]');
-    if(!link) return;
-    var href=link.getAttribute('href');
-    if(!href || href==='#') return;
-    var target=document.getElementById(href.slice(1));
-    if(!target) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    target.scrollIntoView({behavior:'smooth',block:'start'});
-    setTimeout(reportHeight,350);
-  },true);
+
 
   window.addEventListener('load',reportHeight);
   window.addEventListener('resize',reportHeight);
@@ -2007,19 +1995,16 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const mobileQuery = window.matchMedia("(max-width: 700px)");
 
-  document.querySelectorAll('a[href^="#"]').forEach(function (link) {
-    link.addEventListener("click", function (event) {
-      if (mobileQuery.matches) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    });
-  });
-});
+<script>
+/* 모바일에서는 페이지 내부 앵커 이동을 완전히 차단 */
+document.addEventListener("click", function (event) {
+  if (window.innerWidth > 700) return;
+  const link = event.target.closest('a[href^="#"]');
+  if (!link) return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}, true);
 </script>
 
 </body></html>
