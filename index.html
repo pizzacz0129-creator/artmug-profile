@@ -4,7 +4,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1" name="viewport"/>
-<title>VTuber 영상 편집 | 아트머그 임베드 시안 v40</title>
+<title>VTuber 영상 편집 | 아트머그 임베드 시안 v41</title>
 <style>
 :root {
   --orange:#f25524; --orange-dark:#c84016; --orange-soft:#fff1e8;
@@ -1094,43 +1094,6 @@ sections.forEach(s=>observer.observe(s));
       desc.textContent = descriptions[index];
     });
   });
-})();
-</script>
-<script>
-(() => {
-  const onArtmug = /(^|\.)artmug\.kr$/i.test(location.hostname);
-
-  if (onArtmug) {
-    document.documentElement.classList.add('artmug-host');
-  }
-
-  /*
-   * 아트머그가 내부 앵커 클릭을 가로채는 경우를 우회한다.
-   * 캡처 단계에서 먼저 처리해 #portfolio, #schedule 등의 이동을 보장한다.
-   */
-  document.addEventListener('click', (event) => {
-    const link = event.target.closest('a[href^="#"]');
-    if (!link) return;
-
-    const href = link.getAttribute('href');
-    if (!href || href === '#') return;
-
-    const target = document.querySelector(href);
-    if (!target) return;
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-
-    target.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    });
-
-    try {
-      history.replaceState(null, '', href);
-    } catch (_) {}
-  }, true);
 })();
 </script>
 
