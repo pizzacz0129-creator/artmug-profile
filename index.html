@@ -1282,7 +1282,7 @@ button,input,select,textarea{font:inherit}
 </div>
 <div class="calc-row"><label>함께 확인할 시점 수</label><select class="field" id="views"><option value="1">1시점</option><option value="2">2시점</option><option value="3">3시점</option><option value="4">4시점</option></select></div>
 <div class="calc-row"><label>영상 출연 인원</label><select class="field" id="people"><option value="1">1명</option><option value="2">2명</option><option value="3">3명</option><option value="4">4명</option><option value="5">5명 이상</option></select></div>
-<div class="calc-note">※ 시점 추가 비용이 적용되는 경우, 영상 출연 인원 추가 비용은 중복 계산되지 않습니다.</div>
+<div class="calc-note">※ 출연 인원이 시점 수보다 많을 경우, 초과 인원 1명당 3,000원이 추가됩니다.</div>
 <div class="total-bar">
 <div class="total-box"><span>총 예상 금액</span><strong id="totalPrice">0원</strong></div>
 <button class="confirm-btn" id="toggleBreakdown">최종 금액 확인하기</button>
@@ -1392,12 +1392,10 @@ function calculate(){
     rows.push(['시점 추가',viewFee]);
   }
 
-  if(views===1){
-    const peopleFee=Math.max(0,people-1)*3000;
-    if(peopleFee){
-      total+=peopleFee;
-      rows.push(['합방 인원 추가',peopleFee]);
-    }
+  const peopleFee=Math.max(0,people-views)*3000;
+  if(peopleFee){
+    total+=peopleFee;
+    rows.push(['합방 인원 추가',peopleFee]);
   }
 
   document.getElementById('totalPrice').textContent=money(total);
