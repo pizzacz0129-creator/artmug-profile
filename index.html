@@ -1869,13 +1869,45 @@ document.getElementById('copyApplication').onclick=async()=>{
 꼭 넣을 장면: ${v('mustInclude')}
 기타 요청사항: ${v('request')}`;
 
+  let copied=false;
+
   try{
-    await navigator.clipboard.writeText(text);
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      copied=true;
+    }
+  }catch(e){
+    copied=false;
+  }
+
+  if(!copied){
+    const temp=document.createElement('textarea');
+    temp.value=text;
+    temp.setAttribute('readonly','');
+    temp.style.position='fixed';
+    temp.style.top='0';
+    temp.style.left='-9999px';
+    temp.style.opacity='0';
+    document.body.appendChild(temp);
+    temp.focus();
+    temp.select();
+    temp.setSelectionRange(0,temp.value.length);
+
+    try{
+      copied=document.execCommand('copy');
+    }catch(e){
+      copied=false;
+    }
+
+    document.body.removeChild(temp);
+  }
+
+  if(copied){
     const note=document.getElementById('copyNote');
     note.classList.add('show');
     setTimeout(()=>note.classList.remove('show'),2200);
-  }catch(e){
-    alert('복사가 차단되었습니다. 브라우저 권한을 확인해 주세요.');
+  }else{
+    window.prompt('자동 복사가 차단되었습니다. 아래 내용을 길게 눌러 직접 복사해 주세요.',text);
   }
 };
 
