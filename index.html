@@ -1331,7 +1331,7 @@ button,input,select,textarea{font:inherit}
 <textarea class="field full short-area" id="mustInclude" placeholder="꼭 넣을 장면"></textarea>
 <textarea class="field full" id="request" placeholder="기타 요청사항"></textarea>
 </div>
-<button class="btn btn-primary" id="copyApplication" style="width:100%;margin-top:16px">신청 양식 복사</button>
+<button type="button" class="btn btn-primary" id="copyApplication" style="width:100%;margin-top:16px">신청 양식 복사</button>
 <div class="copy-note" id="copyNote">신청 양식이 복사되었습니다. 아트머그 채팅창에 붙여넣어 주세요.</div>
 </div>
 </div>
@@ -1850,7 +1850,10 @@ sourceAvailable.addEventListener('input',()=>{
 });
 syncApplicationFromCalculator();
 
-document.getElementById('copyApplication').onclick=async()=>{
+document.getElementById('copyApplication').onclick=async(event)=>{
+  event.preventDefault();
+  const scrollX=window.scrollX;
+  const scrollY=window.scrollY;
   const v=id=>document.getElementById(id).value.trim();
   const sourceLinkLine=sourceAvailable.value==='있음'
     ? `\n원본 영상 및 자료 링크: ${v('sourceLink')}`
@@ -1885,7 +1888,7 @@ document.getElementById('copyApplication').onclick=async()=>{
     temp.value=text;
     temp.setAttribute('readonly','');
     temp.style.position='fixed';
-    temp.style.top='0';
+    temp.style.top='-9999px';
     temp.style.left='-9999px';
     temp.style.opacity='0';
     document.body.appendChild(temp);
@@ -1901,6 +1904,8 @@ document.getElementById('copyApplication').onclick=async()=>{
 
     document.body.removeChild(temp);
   }
+
+  window.scrollTo(scrollX,scrollY);
 
   if(copied){
     const note=document.getElementById('copyNote');
