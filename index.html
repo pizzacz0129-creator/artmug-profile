@@ -1850,10 +1850,19 @@ sourceAvailable.addEventListener('input',()=>{
 });
 syncApplicationFromCalculator();
 
-document.getElementById('copyApplication').onclick=async(event)=>{
+const copyApplicationButton=document.getElementById('copyApplication');
+
+// iframe 안에서 버튼이 포커스를 가져가며 부모 페이지가 이동하는 현상 방지
+['pointerdown','mousedown','touchstart'].forEach(type=>{
+  copyApplicationButton.addEventListener(type,event=>{
+    event.preventDefault();
+  },{passive:false});
+});
+
+copyApplicationButton.addEventListener('click',async event=>{
   event.preventDefault();
-  const scrollX=window.scrollX;
-  const scrollY=window.scrollY;
+  event.stopPropagation();
+
   const v=id=>document.getElementById(id).value.trim();
   const sourceLinkLine=sourceAvailable.value==='있음'
     ? `\n원본 영상 및 자료 링크: ${v('sourceLink')}`
@@ -1872,49 +1881,21 @@ document.getElementById('copyApplication').onclick=async(event)=>{
 꼭 넣을 장면: ${v('mustInclude')}
 기타 요청사항: ${v('request')}`;
 
-  let copied=false;
-
   try{
-    if(navigator.clipboard && window.isSecureContext){
-      await navigator.clipboard.writeText(text);
-      copied=true;
-    }
-  }catch(e){
-    copied=false;
-  }
+    await navigator.clipboard.writeText(text);
 
-  if(!copied){
-    const temp=document.createElement('textarea');
-    temp.value=text;
-    temp.setAttribute('readonly','');
-    temp.style.position='fixed';
-    temp.style.top='-9999px';
-    temp.style.left='-9999px';
-    temp.style.opacity='0';
-    document.body.appendChild(temp);
-    temp.focus();
-    temp.select();
-    temp.setSelectionRange(0,temp.value.length);
-
-    try{
-      copied=document.execCommand('copy');
-    }catch(e){
-      copied=false;
+    // 버튼에 포커스를 남기지 않음
+    if(document.activeElement instanceof HTMLElement){
+      document.activeElement.blur();
     }
 
-    document.body.removeChild(temp);
-  }
-
-  window.scrollTo(scrollX,scrollY);
-
-  if(copied){
     const note=document.getElementById('copyNote');
     note.classList.add('show');
     setTimeout(()=>note.classList.remove('show'),2200);
-  }else{
-    window.prompt('자동 복사가 차단되었습니다. 아래 내용을 길게 눌러 직접 복사해 주세요.',text);
+  }catch(e){
+    window.prompt('자동 복사에 실패했습니다. 아래 내용을 직접 복사해 주세요.',text);
   }
-};
+});
 
 // 스크롤 메뉴 활성화
 const sections=[...document.querySelectorAll('main section')];
