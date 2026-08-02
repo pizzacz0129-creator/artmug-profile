@@ -1894,14 +1894,14 @@ copyApplicationButton.addEventListener('click',async event=>{
     setTimeout(()=>note.classList.remove('show'),2200);
   }catch(e){
     const note=document.getElementById('copyNote');
-if(note){
-  note.textContent='자동 복사에 실패했습니다. 브라우저 권한을 확인해 주세요.';
-  note.classList.add('show');
-  setTimeout(()=>{
-    note.textContent='입력 후 버튼을 누르면 상담용 문장이 자동으로 복사됩니다.';
-    note.classList.remove('show');
-  },2500);
-}
+    if(note){
+      note.textContent='자동 복사에 실패했습니다. 브라우저 권한을 확인해 주세요.';
+      note.classList.add('show');
+      setTimeout(()=>{
+        note.classList.remove('show');
+        note.textContent='복사되었습니다.';
+      },2500);
+    }
   }
 });
 
