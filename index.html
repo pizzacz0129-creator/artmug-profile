@@ -1881,27 +1881,85 @@ copyApplicationButton.addEventListener('click',async event=>{
 꼭 넣을 장면: ${v('mustInclude')}
 기타 요청사항: ${v('request')}`;
 
-  try{
-    await navigator.clipboard.writeText(text);
-
-    // 버튼에 포커스를 남기지 않음
-    if(document.activeElement instanceof HTMLElement){
-      document.activeElement.blur();
-    }
-
+  const showCopyNote=(message,isError=false)=>{
     const note=document.getElementById('copyNote');
+    if(!note) return;
+    note.textContent=message;
+    note.style.background=isError ? '#fff0ed' : '#e8f7ec';
+    note.style.color=isError ? '#a83c28' : '#2a6e3d';
     note.classList.add('show');
     setTimeout(()=>note.classList.remove('show'),2200);
-  }catch(e){
-    const note=document.getElementById('copyNote');
-    if(note){
-      note.textContent='자동 복사에 실패했습니다. 브라우저 권한을 확인해 주세요.';
-      note.classList.add('show');
-      setTimeout(()=>{
-        note.classList.remove('show');
-        note.textContent='복사되었습니다.';
-      },2500);
+  };
+
+  const fallbackCopy=value=>{
+    const savedX=window.scrollX;
+    const savedY=window.scrollY;
+    const active=document.activeElement;
+
+    const textarea=document.createElement('textarea');
+    textarea.value=value;
+    textarea.setAttribute('readonly','');
+    textarea.setAttribute('aria-hidden','true');
+    textarea.style.position='fixed';
+    textarea.style.left='50%';
+    textarea.style.top='50%';
+    textarea.style.width='1px';
+    textarea.style.height='1px';
+    textarea.style.padding='0';
+    textarea.style.border='0';
+    textarea.style.opacity='0';
+    textarea.style.pointerEvents='none';
+    textarea.style.fontSize='16px';
+    textarea.style.transform='translate(-50%,-50%)';
+    document.body.appendChild(textarea);
+
+    try{
+      textarea.focus({preventScroll:true});
+    }catch(_){
+      textarea.focus();
     }
+    textarea.select();
+    textarea.setSelectionRange(0,textarea.value.length);
+
+    let copied=false;
+    try{
+      copied=document.execCommand('copy');
+    }catch(_){
+      copied=false;
+    }
+
+    textarea.remove();
+
+    if(active instanceof HTMLElement){
+      try{
+        active.focus({preventScroll:true});
+      }catch(_){}
+      active.blur();
+    }
+
+    window.scrollTo(savedX,savedY);
+    requestAnimationFrame(()=>window.scrollTo(savedX,savedY));
+
+    return copied;
+  };
+
+  let copied=false;
+
+  if(navigator.clipboard && typeof navigator.clipboard.writeText==='function'){
+    try{
+      await navigator.clipboard.writeText(text);
+      copied=true;
+    }catch(_){}
+  }
+
+  if(!copied){
+    copied=fallbackCopy(text);
+  }
+
+  if(copied){
+    showCopyNote('신청 양식이 복사되었습니다. 아트머그 채팅창에 붙여넣어 주세요.');
+  }else{
+    showCopyNote('자동 복사에 실패했습니다. 다시 눌러 주세요.',true);
   }
 });
 
