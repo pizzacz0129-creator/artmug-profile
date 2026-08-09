@@ -1532,46 +1532,25 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     render();
   }
 
-  const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
-
-  async function queryEvents() {
-    return client
-      .from(CONFIG.table)
-      .select('day,status')
-      .order('day', { ascending: true });
-  }
-
   async function loadEvents({ silent = false } = {}) {
     if (state.loading) return;
     state.loading = true;
 
-    let result = await queryEvents();
-
-    // PGRST303은 날짜 데이터 문제가 아니라 JWT claims 검증 실패입니다.
-    // 2026년 7월 Supabase에서 Auth와 PostgREST 사이의 시계 차이로
-    // 새 JWT가 'issued at future'로 거절되는 사례가 보고되어 있어,
-    // 토큰을 무작정 갱신하지 않고 잠시 기다린 뒤 재시도합니다.
-    if (result.error?.code === 'PGRST303') {
-      console.warn('[calendar] PGRST303: waiting before retry');
-      await wait(2500);
-      result = await queryEvents();
-
-      if (result.error?.code === 'PGRST303') {
-        await wait(5000);
-        result = await queryEvents();
-      }
-    }
+    const { data, error } = await client
+      .from(CONFIG.table)
+      .select('day,status')
+      .order('day', { ascending: true });
 
     state.loading = false;
 
-    if (result.error) {
-      console.error('[calendar] load failed:', result.error);
-      if (!silent) toast(`일정 불러오기 실패: ${describeError(result.error)}`, true);
+    if (error) {
+      console.error('[calendar] load failed:', error);
+      if (!silent) toast(`일정 불러오기 실패: ${describeError(error)}`, true);
       return;
     }
 
     state.events = { ...DEFAULTS };
-    for (const row of result.data || []) {
+    for (const row of data || []) {
       if (row.day && LABELS[row.status]) {
         state.events[row.day] = row.status;
       }
@@ -1584,40 +1563,25 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     state.events[key] = status;
     render();
 
-    const payload = {
-      day: key,
-      status,
-      memo: '',
-      updated_at: new Date().toISOString()
-    };
-
-    let result = await client
+    const { error } = await client
       .from(CONFIG.table)
-      .upsert(payload, { onConflict: 'day' });
+      .upsert(
+        {
+          day: key,
+          status,
+          memo: '',
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: 'day' }
+      );
 
-    // PGRST303은 즉시 같은 JWT로 반복하지 않고 서버 시계가 따라올 시간을 줍니다.
-    if (result.error?.code === 'PGRST303') {
-      console.warn('[calendar] PGRST303: waiting before save retry');
-      await wait(2500);
-      result = await client
-        .from(CONFIG.table)
-        .upsert(payload, { onConflict: 'day' });
-
-      if (result.error?.code === 'PGRST303') {
-        await wait(5000);
-        result = await client
-          .from(CONFIG.table)
-          .upsert(payload, { onConflict: 'day' });
-      }
-    }
-
-    if (result.error) {
+    if (error) {
       if (previous) state.events[key] = previous;
       else delete state.events[key];
       render();
 
-      const detail = describeError(result.error);
-      console.error('[calendar] save failed:', result.error);
+      const detail = describeError(error);
+      console.error('[calendar] save failed:', error);
       toast(`저장 실패: ${detail}`, true);
       return false;
     }
@@ -1886,12 +1850,12 @@ sourceAvailable.addEventListener('input',()=>{
 });
 syncApplicationFromCalculator();
 
-document.getElementById('copyApplication').onclick=event=>{
+const copyApplicationButton=document.getElementById('copyApplication');
+
+copyApplicationButton.addEventListener('click',event=>{
   event.preventDefault();
   event.stopPropagation();
 
-  const savedX=window.scrollX;
-  const savedY=window.scrollY;
   const v=id=>document.getElementById(id).value.trim();
   const sourceLinkLine=sourceAvailable.value==='있음'
     ? `\n원본 영상 및 자료 링크: ${v('sourceLink')}`
@@ -1910,30 +1874,51 @@ document.getElementById('copyApplication').onclick=event=>{
 꼭 넣을 장면: ${v('mustInclude')}
 기타 요청사항: ${v('request')}`;
 
+  const savedX=window.scrollX;
+  const savedY=window.scrollY;
+  const previousActive=document.activeElement;
+
   const textarea=document.createElement('textarea');
   textarea.value=text;
   textarea.setAttribute('readonly','');
+  textarea.setAttribute('aria-hidden','true');
   textarea.style.position='fixed';
-  textarea.style.left='-9999px';
+  textarea.style.left='0';
   textarea.style.top='0';
   textarea.style.width='1px';
   textarea.style.height='1px';
+  textarea.style.padding='0';
+  textarea.style.margin='0';
+  textarea.style.border='0';
   textarea.style.opacity='0';
   textarea.style.pointerEvents='none';
+  textarea.style.fontSize='16px';
   document.body.appendChild(textarea);
 
-  textarea.focus();
+  try{
+    textarea.focus({preventScroll:true});
+  }catch(_){
+    textarea.focus();
+  }
+
   textarea.select();
   textarea.setSelectionRange(0,textarea.value.length);
 
   let copied=false;
   try{
     copied=document.execCommand('copy');
-  }catch(e){
+  }catch(_){
     copied=false;
   }
 
   textarea.remove();
+
+  if(previousActive instanceof HTMLElement){
+    try{
+      previousActive.focus({preventScroll:true});
+    }catch(_){}
+    previousActive.blur();
+  }
 
   window.scrollTo(savedX,savedY);
   requestAnimationFrame(()=>window.scrollTo(savedX,savedY));
@@ -1943,11 +1928,12 @@ document.getElementById('copyApplication').onclick=event=>{
     note.textContent=copied
       ? '신청 양식이 복사되었습니다. 아트머그 채팅창에 붙여넣어 주세요.'
       : '자동 복사에 실패했습니다. 다시 눌러 주세요.';
+    note.style.background=copied ? '#e8f7ec' : '#fff0ed';
+    note.style.color=copied ? '#2a6e3d' : '#a83c28';
     note.classList.add('show');
     setTimeout(()=>note.classList.remove('show'),2200);
   }
-};
-
+});
 // 스크롤 메뉴 활성화
 const sections=[...document.querySelectorAll('main section')];
 const navs=[...document.querySelectorAll('.floating-nav .nav-btn[href^="#"]:not(.top)')];
