@@ -1542,37 +1542,53 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
   }
 
   async function refreshSession() {
-    const session = await getValidSession();
-    if (session) return session;
-
+    // getSession()으로 기존 JWT를 그대로 재사용하면 PGRST303이 발생해도
+    // 같은 만료/무효 JWT로 다시 요청하게 됩니다.
+    // 따라서 저장/삭제 작업 전에는 실제 refreshSession()을 먼저 실행합니다.
     const { data, error } = await client.auth.refreshSession();
-    if (error) {
-      console.error('[calendar] session refresh failed:', error);
-      return null;
+
+    if (!error && data?.session) {
+      return data.session;
     }
-    return data.session || null;
+
+    console.error('[calendar] session refresh failed:', error);
+
+    // refresh가 실패한 경우에만 현재 세션을 확인합니다.
+    const session = await getValidSession();
+    return session || null;
   }
 
   async function loadEvents({ silent = false } = {}) {
     if (state.loading) return;
     state.loading = true;
 
-    const { data, error } = await client
+    let result = await client
       .from(CONFIG.table)
       .select('day,status')
       .order('day', { ascending: true });
 
+    // 조회에서도 JWT 오류가 나면 세션을 갱신하고 한 번만 재시도합니다.
+    if (result.error?.code === 'PGRST303') {
+      const session = await refreshSession();
+      if (session) {
+        result = await client
+          .from(CONFIG.table)
+          .select('day,status')
+          .order('day', { ascending: true });
+      }
+    }
+
     state.loading = false;
 
-    if (error) {
-      console.error('[calendar] load failed:', error);
+    if (result.error) {
+      console.error('[calendar] load failed:', result.error);
       // 조회 실패 시 현재 화면의 일정을 DEFAULTS로 덮어쓰지 않습니다.
-      if (!silent) toast(`일정 불러오기 실패: ${describeError(error)}`, true);
+      if (!silent) toast(`일정 불러오기 실패: ${describeError(result.error)}`, true);
       return false;
     }
 
     const loadedEvents = { ...DEFAULTS };
-    for (const row of data || []) {
+    for (const row of result.data || []) {
       if (row.day && LABELS[row.status]) {
         loadedEvents[row.day] = row.status;
       }
@@ -1588,6 +1604,7 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     state.events[key] = status;
     render();
 
+    // 저장 전 최신 JWT 확보
     let session = await refreshSession();
     if (!session) {
       if (previous) state.events[key] = previous;
@@ -1645,6 +1662,7 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
   async function resetEvent(key) {
     const previous = state.events[key];
 
+    // 삭제 전 최신 JWT 확보
     let session = await refreshSession();
     if (!session) {
       toast('관리자 세션이 만료되었습니다. 다시 로그인해 주세요.', true);
