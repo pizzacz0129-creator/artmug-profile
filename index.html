@@ -1447,7 +1447,34 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     '2026-08-15': 'available'
   });
 
-  const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+  /*
+   * 공개 조회용 클라이언트와 관리자용 클라이언트를 분리합니다.
+   *
+   * 기존 코드는 로그인 세션이 저장된 client 하나로 SELECT까지 수행했습니다.
+   * 관리자 JWT가 PGRST303(JWT issued at future)에 걸리면 방문자용 일정 조회도
+   * 같이 실패하면서 DEFAULTS만 표시되는 문제가 생길 수 있습니다.
+   *
+   * 공개 조회 클라이언트는 세션을 저장하지 않으므로 일정 SELECT에 관리자 JWT가
+   * 자동으로 붙지 않습니다. calendar_events의 SELECT 정책이 공개되어 있다는
+   * 기존 페이지 구조를 전제로 합니다.
+   */
+  const publicClient = window.supabase.createClient(
+    CONFIG.supabaseUrl,
+    CONFIG.supabaseKey,
+    {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      }
+    }
+  );
+
+  // 로그인/저장/삭제는 기존 세션을 사용하는 관리자용 클라이언트입니다.
+  const adminClient = window.supabase.createClient(
+    CONFIG.supabaseUrl,
+    CONFIG.supabaseKey
+  );
 
   const state = {
     month: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
@@ -1532,11 +1559,15 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     render();
   }
 
+  /*
+   * 일정 조회는 공개 클라이언트로 수행합니다.
+   * 조회 실패 시 이미 화면에 표시 중인 일정/DEFAULTS를 삭제하지 않습니다.
+   */
   async function loadEvents({ silent = false } = {}) {
-    if (state.loading) return;
+    if (state.loading) return false;
     state.loading = true;
 
-    const { data, error } = await client
+    const { data, error } = await publicClient
       .from(CONFIG.table)
       .select('day,status')
       .order('day', { ascending: true });
@@ -1545,29 +1576,102 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
 
     if (error) {
       console.error('[calendar] load failed:', error);
-      if (!silent) toast(`일정 불러오기 실패: ${describeError(error)}`, true);
-      return;
+      if (!silent) {
+        toast(`일정 불러오기 실패: ${describeError(error)}`, true);
+      }
+      return false;
     }
 
-    state.events = { ...DEFAULTS };
+    const nextEvents = { ...DEFAULTS };
+
     for (const row of data || []) {
       if (row.day && LABELS[row.status]) {
-        state.events[row.day] = row.status;
+        nextEvents[row.day] = row.status;
       }
     }
+
+    state.events = nextEvents;
     render();
+    return true;
+  }
+
+  /*
+   * 로그인 후 새 세션이 만들어졌을 때 반드시 일정을 다시 읽습니다.
+   * 기존 코드에는 로그인 후 loadEvents()가 없어, 로그인 전에 조회가 실패하면
+   * 다시 로그인해도 화면이 DEFAULTS에 머무를 수 있었습니다.
+   */
+  async function login() {
+    const password = prompt('관리자 비밀번호를 입력하세요.');
+    if (!password) return false;
+
+    const { data, error } = await adminClient.auth.signInWithPassword({
+      email: CONFIG.adminEmail,
+      password
+    });
+
+    if (error) {
+      console.error('[calendar] login failed:', error);
+      alert(`로그인 실패: ${describeError(error)}`);
+      return false;
+    }
+
+    state.user = data.user || null;
+    state.editing = Boolean(state.user);
+    updateAdminUI();
+
+    // 로그인 직후 DB 일정을 다시 반영합니다.
+    await loadEvents();
+
+    toast('관리자 편집 모드가 켜졌습니다.');
+    return true;
+  }
+
+  /*
+   * 저장 전 현재 세션을 다시 확인합니다.
+   * 세션이 만료된 경우 한 번 갱신한 뒤 저장을 시도합니다.
+   */
+  async function ensureAdminSession() {
+    let { data } = await adminClient.auth.getSession();
+    let session = data?.session || null;
+
+    if (!session) {
+      state.user = null;
+      state.editing = false;
+      updateAdminUI();
+      toast('관리자 로그인이 필요합니다.', true);
+      return null;
+    }
+
+    // access token이 만료 임박한 경우 갱신합니다.
+    const expiresAt = Number(session.expires_at || 0);
+    const now = Math.floor(Date.now() / 1000);
+
+    if (expiresAt && expiresAt - now < 60) {
+      const refreshed = await adminClient.auth.refreshSession();
+      if (refreshed.error || !refreshed.data?.session) {
+        console.error('[calendar] session refresh failed:', refreshed.error);
+        toast(`로그인 세션 갱신 실패: ${describeError(refreshed.error)}`, true);
+        return null;
+      }
+      session = refreshed.data.session;
+    }
+
+    state.user = session.user || null;
+    return session;
   }
 
   async function saveEvent(key, status) {
-  const previous = state.events[key];
-  state.events[key] = status;
-  render();
+    if (!LABELS[status]) return false;
 
-  // 저장 전에 Supabase 로그인 세션의 JWT를 갱신
-  await client.auth.refreshSession();
+    const session = await ensureAdminSession();
+    if (!session) return false;
 
-  const { error } = await client
-    .from(CONFIG.table)
+    const previous = state.events[key];
+    state.events[key] = status;
+    render();
+
+    const { error } = await adminClient
+      .from(CONFIG.table)
       .upsert(
         {
           day: key,
@@ -1589,14 +1693,20 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
       return false;
     }
 
+    // 저장 성공 후 서버 데이터를 다시 읽어 화면과 DB를 동기화합니다.
+    await loadEvents({ silent: true });
+
     toast('일정이 저장되었습니다.');
     return true;
   }
 
   async function resetEvent(key) {
+    const session = await ensureAdminSession();
+    if (!session) return false;
+
     const previous = state.events[key];
 
-    const { error } = await client
+    const { error } = await adminClient
       .from(CONFIG.table)
       .delete()
       .eq('day', key);
@@ -1610,7 +1720,14 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     if (DEFAULTS[key]) state.events[key] = DEFAULTS[key];
     else delete state.events[key];
 
-    if (!state.events[key] && previous) delete state.events[key];
+    // 실제 DB 상태를 다시 확인합니다.
+    await loadEvents({ silent: true });
+
+    // 조회 자체가 실패했을 경우에는 방금 적용한 로컬 상태를 유지합니다.
+    if (previous !== undefined && !state.events[key] && DEFAULTS[key]) {
+      state.events[key] = DEFAULTS[key];
+    }
+
     render();
     toast('기본 상태로 되돌렸습니다.');
     return true;
@@ -1689,6 +1806,8 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     els.modal.setAttribute('aria-hidden', 'false');
 
     requestAnimationFrame(() => {
+      if (!els.panel || !cell || !els.modalDialog) return;
+
       const panelRect = els.panel.getBoundingClientRect();
       const cellRect = cell.getBoundingClientRect();
       const dialogRect = els.modalDialog.getBoundingClientRect();
@@ -1715,27 +1834,6 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     state.selectedDate = null;
   }
 
-  async function login() {
-    const password = prompt('관리자 비밀번호를 입력하세요.');
-    if (!password) return;
-
-    const { data, error } = await client.auth.signInWithPassword({
-      email: CONFIG.adminEmail,
-      password
-    });
-
-    if (error) {
-      console.error('[calendar] login failed:', error);
-      alert(`로그인 실패: ${describeError(error)}`);
-      return;
-    }
-
-    state.user = data.user;
-    state.editing = true;
-    updateAdminUI();
-    toast('관리자 편집 모드가 켜졌습니다.');
-  }
-
   function bindEvents() {
     els.prevBtn?.addEventListener('click', () => {
       state.month = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1);
@@ -1752,21 +1850,28 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
         await login();
         return;
       }
+
+      // 버튼을 눌렀을 때 실제 세션이 살아 있는지도 확인합니다.
+      const session = await ensureAdminSession();
+      if (!session) return;
+
       state.editing = !state.editing;
       updateAdminUI();
     });
 
     els.logoutBtn?.addEventListener('click', async () => {
-      await client.auth.signOut();
+      await adminClient.auth.signOut();
       state.user = null;
       state.editing = false;
+      closeModal();
       updateAdminUI();
       toast('로그아웃했습니다.');
     });
 
     els.grid?.addEventListener('click', event => {
       const cell = event.target.closest('.day[data-date]');
-      if (cell) openModal(cell.dataset.date, cell);
+      if (!cell || cell.disabled) return;
+      openModal(cell.dataset.date, cell);
     });
 
     document.querySelectorAll('.schedule-choice').forEach(button => {
@@ -1796,20 +1901,36 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
   async function init() {
     bindEvents();
 
-    const { data } = await client.auth.getSession();
-    state.user = data.session?.user || null;
-    state.editing = false;
+    const { data, error } = await adminClient.auth.getSession();
 
+    if (error) {
+      console.error('[calendar] getSession failed:', error);
+      state.user = null;
+    } else {
+      state.user = data.session?.user || null;
+    }
+
+    // 새로고침 후에는 로그인 상태만 복구하고 편집 모드는 자동으로 켜지지 않게 합니다.
+    state.editing = false;
     updateAdminUI();
+
+    // 공개 조회는 관리자 로그인 여부와 관계없이 수행합니다.
     await loadEvents();
 
-    client.auth.onAuthStateChange((_event, session) => {
+    adminClient.auth.onAuthStateChange((_event, session) => {
       state.user = session?.user || null;
-      if (!state.user) state.editing = false;
+
+      if (!state.user) {
+        state.editing = false;
+        closeModal();
+      }
+
       updateAdminUI();
     });
 
-    window.setInterval(() => loadEvents({ silent: true }), CONFIG.refreshMs);
+    window.setInterval(() => {
+      loadEvents({ silent: true });
+    }, CONFIG.refreshMs);
   }
 
   init().catch(error => {
@@ -1819,6 +1940,7 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
 })();
 
 // 신청 양식 연동 및 복사
+
 const sourceAvailable=document.getElementById('sourceAvailable');
 const sourceLinkWrap=document.getElementById('sourceLinkWrap');
 const calcViews=document.getElementById('views');
