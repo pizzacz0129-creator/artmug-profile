@@ -1418,7 +1418,11 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     supabaseKey: 'sb_publishable_jRrW5fZ7_sj1gQpf2V7PGQ_gD7oEiHL',
     adminEmail: 'pizzacz0129@gmail.com',
     table: 'calendar_events',
-    refreshMs: 30000
+    refreshMs: 30000,
+
+    // PGRST303(JWT issued at future) 대응용 재시도 설정
+    retryCount: 4,
+    retryDelayMs: 1200
   });
 
   const LABELS = Object.freeze({
@@ -1447,12 +1451,6 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     '2026-08-15': 'available'
   });
 
-  /*
-   * 중요:
-   * 기존 버전의 문제를 최소화하기 위해 Supabase client를 하나만 사용합니다.
-   * 세션 자동 저장/갱신은 유지하되, 로그인 직후 반드시 현재 세션을 다시
-   * 확인하고 일정을 다시 조회합니다.
-   */
   const client = window.supabase.createClient(
     CONFIG.supabaseUrl,
     CONFIG.supabaseKey,
@@ -1491,6 +1489,8 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     nextBtn: document.getElementById('nextMonth')
   };
 
+  const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
   function dateKey(year, monthIndex, day) {
     return `${year}-${String(monthIndex + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   }
@@ -1521,6 +1521,15 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
       .join(' · ');
   }
 
+  function isJwtFutureError(error) {
+    const text = describeError(error).toLowerCase();
+    return (
+      error?.code === 'PGRST303' ||
+      text.includes('jwt issued at future') ||
+      text.includes('issued at future')
+    );
+  }
+
   function updateAdminUI() {
     const loggedIn = Boolean(state.user);
 
@@ -1549,22 +1558,76 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
   }
 
   /*
-   * 조회 실패 시 state.events를 DEFAULTS로 덮어쓰지 않습니다.
-   * 기존에 성공적으로 읽어온 일정이 있다면 그대로 유지합니다.
+   * 핵심 수정:
+   * PGRST303은 첫 요청 직후 일시적으로 발생할 수 있으므로
+   * "JWT issued at future"인 경우에만 잠시 기다렸다가 같은 요청을 재시도합니다.
+   *
+   * 일반적인 401/RLS 오류를 무작정 반복하지 않습니다.
    */
+  async function queryCalendarWithRetry(requestFactory, { silent = false } = {}) {
+    let lastError = null;
+
+    for (let attempt = 0; attempt < CONFIG.retryCount; attempt++) {
+      try {
+        const result = await requestFactory();
+
+        if (!result.error) return result;
+
+        lastError = result.error;
+
+        if (!isJwtFutureError(result.error)) {
+          break;
+        }
+
+        console.warn(
+          `[calendar] PGRST303 retry ${attempt + 1}/${CONFIG.retryCount}`,
+          result.error
+        );
+
+        if (attempt < CONFIG.retryCount - 1) {
+          await sleep(CONFIG.retryDelayMs);
+        }
+      } catch (error) {
+        lastError = error;
+
+        if (!isJwtFutureError(error) || attempt >= CONFIG.retryCount - 1) {
+          break;
+        }
+
+        await sleep(CONFIG.retryDelayMs);
+      }
+    }
+
+    if (!silent && lastError) {
+      console.error('[calendar] request failed after retry:', lastError);
+    }
+
+    return { data: null, error: lastError };
+  }
+
   async function loadEvents({ silent = false } = {}) {
     if (state.loading) return false;
     state.loading = true;
 
     try {
-      const { data, error } = await client
-        .from(CONFIG.table)
-        .select('day,status')
-        .order('day', { ascending: true });
+      const result = await queryCalendarWithRetry(
+        () => client
+          .from(CONFIG.table)
+          .select('day,status')
+          .order('day', { ascending: true }),
+        { silent }
+      );
+
+      const { data, error } = result;
 
       if (error) {
         console.error('[calendar] load failed:', error);
-        if (!silent) toast(`일정 불러오기 실패: ${describeError(error)}`, true);
+
+        if (!silent) {
+          toast(`일정 불러오기 실패: ${describeError(error)}`, true);
+        }
+
+        // 조회 실패했다고 기존 화면을 DEFAULTS로 덮어쓰지 않습니다.
         return false;
       }
 
@@ -1582,21 +1645,6 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     } finally {
       state.loading = false;
     }
-  }
-
-  async function refreshSessionAndGetUser() {
-    const { data, error } = await client.auth.getSession();
-
-    if (error) {
-      console.error('[calendar] getSession failed:', error);
-      return null;
-    }
-
-    if (data.session?.user) {
-      return data.session.user;
-    }
-
-    return null;
   }
 
   async function login() {
@@ -1618,10 +1666,7 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     state.editing = Boolean(state.user);
     updateAdminUI();
 
-    /*
-     * 로그인 성공 직후 새 세션으로 일정 조회.
-     * 기존 버전처럼 이전 조회 실패 상태에 머무르지 않게 합니다.
-     */
+    // 로그인 직후 JWT clock-skew가 있을 수 있으므로 retry를 포함해 재조회합니다.
     await loadEvents();
 
     toast('관리자 편집 모드가 켜졌습니다.');
@@ -1629,7 +1674,7 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
   }
 
   async function ensureAdminSession() {
-    let { data, error } = await client.auth.getSession();
+    const { data, error } = await client.auth.getSession();
 
     if (error) {
       console.error('[calendar] session check failed:', error);
@@ -1637,7 +1682,7 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
       return null;
     }
 
-    let session = data?.session || null;
+    const session = data?.session || null;
 
     if (!session) {
       state.user = null;
@@ -1645,25 +1690,6 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
       updateAdminUI();
       toast('관리자 로그인이 필요합니다.', true);
       return null;
-    }
-
-    /*
-     * access token 만료가 임박했을 때만 명시적으로 갱신합니다.
-     * 정상 세션에는 refresh 요청을 불필요하게 보내지 않습니다.
-     */
-    const expiresAt = Number(session.expires_at || 0);
-    const now = Math.floor(Date.now() / 1000);
-
-    if (expiresAt && expiresAt - now < 60) {
-      const refreshed = await client.auth.refreshSession();
-
-      if (refreshed.error || !refreshed.data?.session) {
-        console.error('[calendar] refresh failed:', refreshed.error);
-        toast(`로그인 세션 갱신 실패: ${describeError(refreshed.error)}`, true);
-        return null;
-      }
-
-      session = refreshed.data.session;
     }
 
     state.user = session.user || null;
@@ -1680,36 +1706,36 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
       ? state.events[key]
       : undefined;
 
+    // 낙관적 UI
     state.events[key] = status;
     render();
 
-    const { error } = await client
-      .from(CONFIG.table)
-      .upsert(
-        {
-          day: key,
-          status,
-          memo: '',
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: 'day' }
-      );
+    const result = await queryCalendarWithRetry(
+      () => client
+        .from(CONFIG.table)
+        .upsert(
+          {
+            day: key,
+            status,
+            memo: '',
+            updated_at: new Date().toISOString()
+          },
+          { onConflict: 'day' }
+        )
+    );
 
-    if (error) {
+    if (result.error) {
       if (previous === undefined) delete state.events[key];
       else state.events[key] = previous;
 
       render();
 
-      console.error('[calendar] save failed:', error);
-      toast(`저장 실패: ${describeError(error)}`, true);
+      console.error('[calendar] save failed:', result.error);
+      toast(`저장 실패: ${describeError(result.error)}`, true);
       return false;
     }
 
-    /*
-     * 저장 성공 후 서버 상태를 다시 확인합니다.
-     * 조회 실패하더라도 방금 저장한 로컬 상태는 유지합니다.
-     */
+    // 저장 후 서버 상태 재확인.
     await loadEvents({ silent: true });
 
     toast('일정이 저장되었습니다.');
@@ -1720,18 +1746,16 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     const session = await ensureAdminSession();
     if (!session) return false;
 
-    const previous = Object.prototype.hasOwnProperty.call(state.events, key)
-      ? state.events[key]
-      : undefined;
+    const result = await queryCalendarWithRetry(
+      () => client
+        .from(CONFIG.table)
+        .delete()
+        .eq('day', key)
+    );
 
-    const { error } = await client
-      .from(CONFIG.table)
-      .delete()
-      .eq('day', key);
-
-    if (error) {
-      console.error('[calendar] reset failed:', error);
-      toast(`초기화 실패: ${describeError(error)}`, true);
+    if (result.error) {
+      console.error('[calendar] reset failed:', result.error);
+      toast(`초기화 실패: ${describeError(result.error)}`, true);
       return false;
     }
 
@@ -1816,9 +1840,7 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
     state.selectedDate = key;
 
     const [year, month, day] = key.split('-').map(Number);
-    if (els.dateLabel) {
-      els.dateLabel.textContent = `${year}년 ${month}월 ${day}일`;
-    }
+    if (els.dateLabel) els.dateLabel.textContent = `${year}년 ${month}월 ${day}일`;
 
     els.modal.classList.add('show');
     els.modal.setAttribute('aria-hidden', 'false');
@@ -1906,11 +1928,8 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
         const status = button.dataset.status;
         closeModal();
 
-        if (status === 'clear') {
-          await resetEvent(key);
-        } else if (LABELS[status]) {
-          await saveEvent(key, status);
-        }
+        if (status === 'clear') await resetEvent(key);
+        else if (LABELS[status]) await saveEvent(key, status);
       });
     });
 
@@ -1928,17 +1947,21 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
   async function init() {
     bindEvents();
 
-    const user = await refreshSessionAndGetUser();
-    state.user = user;
+    const { data, error } = await client.auth.getSession();
+
+    if (error) {
+      console.error('[calendar] getSession failed:', error);
+      state.user = null;
+    } else {
+      state.user = data.session?.user || null;
+    }
+
     state.editing = false;
     updateAdminUI();
 
-    /*
-     * 페이지가 열리면 항상 DB의 실제 일정을 읽습니다.
-     */
     await loadEvents();
 
-    client.auth.onAuthStateChange(async (_event, session) => {
+    client.auth.onAuthStateChange((event, session) => {
       state.user = session?.user || null;
 
       if (!state.user) {
@@ -1948,11 +1971,9 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
 
       updateAdminUI();
 
-      /*
-       * SIGNED_IN / TOKEN_REFRESHED 이후에도 DB 상태를 재조회합니다.
-       * 단, 콜백 내부에서 세션 관련 API를 다시 호출하지 않습니다.
-       */
-      if (session) {
+      if (session && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+        // Auth 상태 변경 직후에는 JWT clock skew가 있을 수 있으므로
+        // 이벤트 콜백을 막지 않도록 다음 tick에서 조회합니다.
         window.setTimeout(() => {
           loadEvents({ silent: true });
         }, 0);
@@ -1971,7 +1992,6 @@ document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('
 })();
 
 // 신청 양식 연동 및 복사
-
 
 const sourceAvailable=document.getElementById('sourceAvailable');
 const sourceLinkWrap=document.getElementById('sourceLinkWrap');
