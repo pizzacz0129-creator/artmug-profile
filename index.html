@@ -1693,7 +1693,7 @@ html.artmug-embedded .mobile-bar {
       height=Math.max(height,Math.ceil(rect.bottom+window.scrollY));
     });
 
-    return 8000;
+    return Math.ceil(height+24);
   }
 
   var timer=null;
@@ -1701,7 +1701,7 @@ html.artmug-embedded .mobile-bar {
     if(!embedded()) return;
     clearTimeout(timer);
     timer=setTimeout(function(){
-      var height=measuredHeight();
+      var height=8000;
 
       /* 아트머그 버전별 수신 형식에 대응 */
       window.parent.postMessage({type:'artmugContentHeight',height:height},'*');
