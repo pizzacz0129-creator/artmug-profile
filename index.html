@@ -1701,14 +1701,16 @@ html.artmug-embedded .mobile-bar {
     if(!embedded()) return;
     clearTimeout(timer);
     timer=setTimeout(function(){
-      var height=8000;
+      var height=measuredHeight();
 
       /* 아트머그 버전별 수신 형식에 대응 */
-      window.parent.postMessage({type:'artmugContentHeight',height:height},'*');
-      window.parent.postMessage({type:'resizeIframe',height:height},'*');
-      window.parent.postMessage({type:'setIframeHeight',height:height},'*');
-      window.parent.postMessage({type:'setHeight',height:height},'*');
-      window.parent.postMessage({type:'resize',height:height},'*');
+      var width='100%';
+      var fixedHeight=8000;
+      window.parent.postMessage({type:'artmugContentHeight',width:width,height:fixedHeight},'*');
+      window.parent.postMessage({type:'resizeIframe',width:width,height:fixedHeight},'*');
+      window.parent.postMessage({type:'setIframeHeight',width:width,height:fixedHeight},'*');
+      window.parent.postMessage({type:'setHeight',width:width,height:fixedHeight},'*');
+      window.parent.postMessage({type:'resize',width:width,height:fixedHeight},'*');
     },60);
   }
 
