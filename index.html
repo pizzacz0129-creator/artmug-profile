@@ -138,7 +138,7 @@ button,input,select,textarea{font:inherit}
 .off{background:#ededed;color:#666}
 
 .consult-panel{max-width:980px;margin:auto;padding:28px}
-.consult-top{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px}
+.consult-top{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:24px}
 .consult-card{padding:20px;background:#fff9ec;border:1px solid #ecd2a7;border-radius:18px}
 .consult-card h3{margin:0 0 8px;color:#77471a}
 .consult-card p{margin:0;color:var(--muted);line-height:1.7}
@@ -466,10 +466,11 @@ button,input,select,textarea{font:inherit}
 
 /* v25 single-line subtitle descriptions */
 #subtitles .subtitle-tab{
-  min-height:68px;
+  min-height:44px;
   display:flex;
   flex-direction:column;
   justify-content:center;
+  padding:10px 14px;
 }
 #subtitles .subtitle-tab span{
   display:block;
@@ -1083,9 +1084,9 @@ button,input,select,textarea{font:inherit}
 <h3 id="subtitleTitle">기본 자막</h3>
 <p id="subtitleText">기본 말자막의 경우, 캐릭터 별로 색을 바꿔서 적용합니다.</p>
 <div class="subtitle-tabs">
-<button class="subtitle-tab active" data-index="0" data-text="화자별 기본 자막을 통일해 대화의 흐름을 빠르게 구분할 수 있도록 구성합니다." data-title="기본 대화 자막"><strong>기본 자막</strong><span>기본 말자막의 경우, 캐릭터별로 색을 바꿔 적용합니다.</span></button>
-<button class="subtitle-tab" data-index="1" data-text="웃음, 당황, 분노, 놀람 등 감정이 커지는 순간과 핵심 대사에만 강조 자막을 사용합니다." data-title="감정·포인트 자막"><strong>감정 자막 1</strong><span>강한 감정이나 리액션을 자막과 효과로 강조합니다.</span></button>
-<button class="subtitle-tab" data-index="2" data-text="게임 규칙이나 이전 맥락처럼 화면만으로 이해하기 어려운 부분을 짧고 명확하게 보충합니다." data-title="상황 설명 자막"><strong>감정 자막 2</strong><span>방송 분위기에 맞는 감정 표현과 디자인을 적용합니다.</span></button>
+<button class="subtitle-tab active" data-index="0" data-text="화자별 기본 자막을 통일해 대화의 흐름을 빠르게 구분할 수 있도록 구성합니다." data-title="기본 대화 자막"><strong>기본 자막</strong></button>
+<button class="subtitle-tab" data-index="1" data-text="웃음, 당황, 분노, 놀람 등 감정이 커지는 순간과 핵심 대사에만 강조 자막을 사용합니다." data-title="감정·포인트 자막"><strong>감정 자막 1</strong></button>
+<button class="subtitle-tab" data-index="2" data-text="게임 규칙이나 이전 맥락처럼 화면만으로 이해하기 어려운 부분을 짧고 명확하게 보충합니다." data-title="상황 설명 자막"><strong>감정 자막 2</strong></button>
 </div>
 </div>
 </div>
@@ -1111,7 +1112,7 @@ button,input,select,textarea{font:inherit}
 <div class="consult-top">
 <div class="consult-card"><h3>오전 10시 ~ 오후 10시</h3><p>해당 시간 동안 순차적으로 답변드립니다. 해당 시간 외에 접수된 문의는 상담 시작 후 순차적으로 확인합니다.</p></div>
 <div class="consult-card"><h3>시간 외 문의</h3><p>상담 시간이 아니어도 언제든 문의할 수 있습니다. 다음 상담 시간부터 순차적으로 답변드립니다.</p></div>
-<div class="consult-card"><h3>긴급 상담</h3><p>급한 수정이나 일정 문의는 메시지 앞에 [긴급]을 붙여주시면 확인 후 최대한 빠르게 답변드립니다.</p></div>
+
 </div>
 <div class="guide-list">
 <div class="guide-item"><div class="process-icon">◷</div><div><h3>원본 영상 길이 제한</h3><p>원본 영상이 2시간을 초과하는 경우에는 편집 작업을 수행하지 않고 있습니다.</p></div></div>
@@ -1263,7 +1264,7 @@ function calculate(){
     ? rows.map(r=>`<div class="b-row"><span>${r[0]}</span><strong>${money(r[1])}</strong></div>`).join('')
     : '<div class="b-row"><span>희망 완성 길이 없음</span><strong>0원</strong></div>';
 
-  document.getElementById('targetLength').value=mins>0 ? mins+'분' : '없음';
+  document.getElementById('targetLength').value=mins>0 ? '희망 완성 길이 - '+mins+'분' : '희망 완성 길이 - 없음';
 }
 document.querySelectorAll('#calculator select').forEach(el=>el.addEventListener('input',calculate));
 calculate();
@@ -1281,7 +1282,7 @@ function syncApplicationFromCalculator(){
   applyViews.value=calcViews.value;
   applyPeople.value=calcPeople.value;
   const mins=Number(document.getElementById('targetMinutes').value);
-  document.getElementById('targetLength').value=mins>0 ? mins+'분' : '없음';
+  document.getElementById('targetLength').value=mins>0 ? '희망 완성 길이 - '+mins+'분' : '희망 완성 길이 - 없음';
 }
 
 calcViews.addEventListener('input',syncApplicationFromCalculator);
