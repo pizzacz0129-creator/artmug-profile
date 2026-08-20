@@ -1209,7 +1209,191 @@ button,input,select,textarea{font:inherit}
 </section>
 </main>
 <div class="modal" id="modal"><img alt="" id="modalImg"></div>
+<script>
+const money=n=>new Intl.NumberFormat('ko-KR').format(n)+'원';
 
+// 포트폴리오 탭
+document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const cat=btn.dataset.cat;
+  document.querySelectorAll('.portfolio-card').forEach(card=>card.classList.toggle('hidden',!card.classList.contains(cat)));
+}));
+
+// 자막 탭
+document.querySelectorAll('.subtitle-tab').forEach(btn=>btn.addEventListener('click',()=>{
+  document.querySelectorAll('.subtitle-tab').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('subtitleTitle').textContent=btn.dataset.title;
+  document.getElementById('subtitleText').textContent=btn.dataset.text;
+}));
+
+// 이미지 확대
+const modal=document.getElementById('modal'), modalImg=document.getElementById('modalImg');
+document.querySelectorAll('.zoomable img').forEach(img=>img.addEventListener('click',()=>{modalImg.src=img.src;modal.classList.add('show')}));
+modal.addEventListener('click',()=>modal.classList.remove('show'));
+
+// 견적 계산
+function calculate(){
+  const mins=Number(document.getElementById('targetMinutes').value);
+  const views=Number(document.getElementById('views').value);
+  const people=Number(document.getElementById('people').value);
+  let total=0, rows=[];
+
+  if(mins > 0){
+    const base=mins*17000;
+    total+=base;
+    rows.push(['기본 편집비 ('+mins+'분)',base]);
+  }
+
+  const viewFee=Math.max(0,views-1)*10000;
+  if(viewFee){
+    total+=viewFee;
+    rows.push(['시점 추가',viewFee]);
+  }
+
+  const peopleFee=Math.max(0,people-views)*3000;
+  if(peopleFee){
+    total+=peopleFee;
+    rows.push(['합방 인원 추가',peopleFee]);
+  }
+
+  document.getElementById('totalPrice').textContent=money(total);
+  document.getElementById('breakdown').innerHTML=rows.length
+    ? rows.map(r=>`<div class="b-row"><span>${r[0]}</span><strong>${money(r[1])}</strong></div>`).join('')
+    : '<div class="b-row"><span>희망 완성 길이 없음</span><strong>0원</strong></div>';
+
+  document.getElementById('targetLength').value=mins>0 ? mins+'분' : '없음';
+}
+document.querySelectorAll('#calculator select').forEach(el=>el.addEventListener('input',calculate));
+calculate();
+document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('breakdown').classList.toggle('show');
+
+// 신청 양식 연동 및 복사
+const sourceAvailable=document.getElementById('sourceAvailable');
+const sourceLinkWrap=document.getElementById('sourceLinkWrap');
+const calcViews=document.getElementById('views');
+const calcPeople=document.getElementById('people');
+const applyViews=document.getElementById('applyViews');
+const applyPeople=document.getElementById('applyPeople');
+
+function syncApplicationFromCalculator(){
+  applyViews.value=calcViews.value;
+  applyPeople.value=calcPeople.value;
+  const mins=Number(document.getElementById('targetMinutes').value);
+  document.getElementById('targetLength').value=mins>0 ? mins+'분' : '없음';
+}
+
+calcViews.addEventListener('input',syncApplicationFromCalculator);
+calcPeople.addEventListener('input',syncApplicationFromCalculator);
+document.getElementById('targetMinutes').addEventListener('input',syncApplicationFromCalculator);
+
+applyViews.addEventListener('input',()=>{
+  calcViews.value=applyViews.value;
+  calculate();
+});
+applyPeople.addEventListener('input',()=>{
+  calcPeople.value=applyPeople.value;
+  calculate();
+});
+
+sourceAvailable.addEventListener('input',()=>{
+  const show=sourceAvailable.value==='있음';
+  sourceLinkWrap.classList.toggle('show',show);
+  if(!show) document.getElementById('sourceLink').value='';
+});
+syncApplicationFromCalculator();
+
+const copyApplicationButton=document.getElementById('copyApplication');
+
+copyApplicationButton.addEventListener('click',event=>{
+  event.preventDefault();
+  event.stopPropagation();
+
+  const v=id=>document.getElementById(id).value.trim();
+  const sourceLinkLine=sourceAvailable.value==='있음'
+    ? `\n원본 영상 및 자료 링크: ${v('sourceLink')}`
+    : '';
+
+  const text=`[영상 편집 신청]
+
+영상이 올라갈 채널 링크: ${v('channelLink')}
+영상 주제: ${v('videoTopic')}
+원본 영상 길이: ${v('sourceLength')}
+희망 완성 길이: ${v('targetLength')}
+안내사항 확인: ${v('guideConfirmed')}
+영상 소스 유무: ${v('sourceAvailable')}${sourceLinkLine}
+추가 시점: ${v('applyViews')}시점
+영상 출연 인원: ${v('applyPeople')}명
+꼭 넣을 장면: ${v('mustInclude')}
+기타 요청사항: ${v('request')}`;
+
+  const savedX=window.scrollX;
+  const savedY=window.scrollY;
+  const previousActive=document.activeElement;
+
+  const textarea=document.createElement('textarea');
+  textarea.value=text;
+  textarea.setAttribute('readonly','');
+  textarea.setAttribute('aria-hidden','true');
+  textarea.style.position='fixed';
+  textarea.style.left='0';
+  textarea.style.top='0';
+  textarea.style.width='1px';
+  textarea.style.height='1px';
+  textarea.style.padding='0';
+  textarea.style.margin='0';
+  textarea.style.border='0';
+  textarea.style.opacity='0';
+  textarea.style.pointerEvents='none';
+  textarea.style.fontSize='16px';
+  document.body.appendChild(textarea);
+
+  try{
+    textarea.focus({preventScroll:true});
+  }catch(_){
+    textarea.focus();
+  }
+
+  textarea.select();
+  textarea.setSelectionRange(0,textarea.value.length);
+
+  let copied=false;
+  try{
+    copied=document.execCommand('copy');
+  }catch(_){
+    copied=false;
+  }
+
+  textarea.remove();
+
+  if(previousActive instanceof HTMLElement){
+    try{
+      previousActive.focus({preventScroll:true});
+    }catch(_){}
+    previousActive.blur();
+  }
+
+  window.scrollTo(savedX,savedY);
+  requestAnimationFrame(()=>window.scrollTo(savedX,savedY));
+
+  const note=document.getElementById('copyNote');
+  if(note){
+    note.textContent=copied
+      ? '신청 양식이 복사되었습니다. 아트머그 채팅창에 붙여넣어 주세요.'
+      : '자동 복사에 실패했습니다. 다시 눌러 주세요.';
+    note.style.background=copied ? '#e8f7ec' : '#fff0ed';
+    note.style.color=copied ? '#2a6e3d' : '#a83c28';
+    note.classList.add('show');
+    setTimeout(()=>note.classList.remove('show'),2200);
+  }
+});
+// 스크롤 메뉴 활성화
+const sections=[...document.querySelectorAll('main section')];
+const navs=[...document.querySelectorAll('.floating-nav .nav-btn[href^="#"]:not(.top)')];
+const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)navs.forEach(n=>n.classList.toggle('active',n.getAttribute('href')==='#'+e.target.id));}),{rootMargin:'-35% 0px -55% 0px'});
+sections.forEach(s=>observer.observe(s));
+</script>
 <script>
 (() => {
   const images = [
@@ -1627,205 +1811,6 @@ document.addEventListener("click", function (event) {
 }, true);
 </script>
 
-
-
-<script>
-/* 달력 제거 전 기존 비달력 상호작용 복원 */
-const schedulePanelElement=document.getElementById('schedulePanel');
-const scheduleModalElement=document.getElementById('scheduleModal');
-const scheduleToastElement=document.getElementById('scheduleToast');
-if(schedulePanelElement&&scheduleModalElement){
-  schedulePanelElement.appendChild(scheduleModalElement);
-}
-if(schedulePanelElement&&scheduleToastElement){
-  schedulePanelElement.appendChild(scheduleToastElement);
-}
-
-const money=n=>new Intl.NumberFormat('ko-KR').format(n)+'원';
-
-// 포트폴리오 탭
-document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  const cat=btn.dataset.cat;
-  document.querySelectorAll('.portfolio-card').forEach(card=>card.classList.toggle('hidden',!card.classList.contains(cat)));
-}));
-
-// 자막 탭
-document.querySelectorAll('.subtitle-tab').forEach(btn=>btn.addEventListener('click',()=>{
-  document.querySelectorAll('.subtitle-tab').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('subtitleTitle').textContent=btn.dataset.title;
-  document.getElementById('subtitleText').textContent=btn.dataset.text;
-}));
-
-// 이미지 확대
-const modal=document.getElementById('modal'), modalImg=document.getElementById('modalImg');
-document.querySelectorAll('.zoomable img').forEach(img=>img.addEventListener('click',()=>{modalImg.src=img.src;modal.classList.add('show')}));
-modal.addEventListener('click',()=>modal.classList.remove('show'));
-
-// 견적 계산
-function calculate(){
-  const mins=Number(document.getElementById('targetMinutes').value);
-  const views=Number(document.getElementById('views').value);
-  const people=Number(document.getElementById('people').value);
-  let total=0, rows=[];
-
-  if(mins > 0){
-    const base=mins*17000;
-    total+=base;
-    rows.push(['기본 편집비 ('+mins+'분)',base]);
-  }
-
-  const viewFee=Math.max(0,views-1)*10000;
-  if(viewFee){
-    total+=viewFee;
-    rows.push(['시점 추가',viewFee]);
-  }
-
-  const peopleFee=Math.max(0,people-views)*3000;
-  if(peopleFee){
-    total+=peopleFee;
-    rows.push(['합방 인원 추가',peopleFee]);
-  }
-
-  document.getElementById('totalPrice').textContent=money(total);
-  document.getElementById('breakdown').innerHTML=rows.length
-    ? rows.map(r=>`<div class="b-row"><span>${r[0]}</span><strong>${money(r[1])}</strong></div>`).join('')
-    : '<div class="b-row"><span>희망 완성 길이 없음</span><strong>0원</strong></div>';
-
-  document.getElementById('targetLength').value=mins>0 ? mins+'분' : '없음';
-}
-document.querySelectorAll('#calculator select').forEach(el=>el.addEventListener('input',calculate));
-calculate();
-document.getElementById('toggleBreakdown').onclick=()=>document.getElementById('breakdown').classList.toggle('show');
-
-
-// 신청 양식 연동 및 복사
-const sourceAvailable=document.getElementById('sourceAvailable');
-const sourceLinkWrap=document.getElementById('sourceLinkWrap');
-const calcViews=document.getElementById('views');
-const calcPeople=document.getElementById('people');
-const applyViews=document.getElementById('applyViews');
-const applyPeople=document.getElementById('applyPeople');
-
-function syncApplicationFromCalculator(){
-  applyViews.value=calcViews.value;
-  applyPeople.value=calcPeople.value;
-  const mins=Number(document.getElementById('targetMinutes').value);
-  document.getElementById('targetLength').value=mins>0 ? mins+'분' : '없음';
-}
-
-calcViews.addEventListener('input',syncApplicationFromCalculator);
-calcPeople.addEventListener('input',syncApplicationFromCalculator);
-document.getElementById('targetMinutes').addEventListener('input',syncApplicationFromCalculator);
-
-applyViews.addEventListener('input',()=>{
-  calcViews.value=applyViews.value;
-  calculate();
-});
-applyPeople.addEventListener('input',()=>{
-  calcPeople.value=applyPeople.value;
-  calculate();
-});
-
-sourceAvailable.addEventListener('input',()=>{
-  const show=sourceAvailable.value==='있음';
-  sourceLinkWrap.classList.toggle('show',show);
-  if(!show) document.getElementById('sourceLink').value='';
-});
-syncApplicationFromCalculator();
-
-const copyApplicationButton=document.getElementById('copyApplication');
-
-copyApplicationButton.addEventListener('click',event=>{
-  event.preventDefault();
-  event.stopPropagation();
-
-  const v=id=>document.getElementById(id).value.trim();
-  const sourceLinkLine=sourceAvailable.value==='있음'
-    ? `\n원본 영상 및 자료 링크: ${v('sourceLink')}`
-    : '';
-
-  const text=`[영상 편집 신청]
-
-영상이 올라갈 채널 링크: ${v('channelLink')}
-영상 주제: ${v('videoTopic')}
-원본 영상 길이: ${v('sourceLength')}
-희망 완성 길이: ${v('targetLength')}
-안내사항 확인: ${v('guideConfirmed')}
-영상 소스 유무: ${v('sourceAvailable')}${sourceLinkLine}
-추가 시점: ${v('applyViews')}시점
-영상 출연 인원: ${v('applyPeople')}명
-꼭 넣을 장면: ${v('mustInclude')}
-기타 요청사항: ${v('request')}`;
-
-  const savedX=window.scrollX;
-  const savedY=window.scrollY;
-  const previousActive=document.activeElement;
-
-  const textarea=document.createElement('textarea');
-  textarea.value=text;
-  textarea.setAttribute('readonly','');
-  textarea.setAttribute('aria-hidden','true');
-  textarea.style.position='fixed';
-  textarea.style.left='0';
-  textarea.style.top='0';
-  textarea.style.width='1px';
-  textarea.style.height='1px';
-  textarea.style.padding='0';
-  textarea.style.margin='0';
-  textarea.style.border='0';
-  textarea.style.opacity='0';
-  textarea.style.pointerEvents='none';
-  textarea.style.fontSize='16px';
-  document.body.appendChild(textarea);
-
-  try{
-    textarea.focus({preventScroll:true});
-  }catch(_){
-    textarea.focus();
-  }
-
-  textarea.select();
-  textarea.setSelectionRange(0,textarea.value.length);
-
-  let copied=false;
-  try{
-    copied=document.execCommand('copy');
-  }catch(_){
-    copied=false;
-  }
-
-  textarea.remove();
-
-  if(previousActive instanceof HTMLElement){
-    try{
-      previousActive.focus({preventScroll:true});
-    }catch(_){}
-    previousActive.blur();
-  }
-
-  window.scrollTo(savedX,savedY);
-  requestAnimationFrame(()=>window.scrollTo(savedX,savedY));
-
-  const note=document.getElementById('copyNote');
-  if(note){
-    note.textContent=copied
-      ? '신청 양식이 복사되었습니다. 아트머그 채팅창에 붙여넣어 주세요.'
-      : '자동 복사에 실패했습니다. 다시 눌러 주세요.';
-    note.style.background=copied ? '#e8f7ec' : '#fff0ed';
-    note.style.color=copied ? '#2a6e3d' : '#a83c28';
-    note.classList.add('show');
-    setTimeout(()=>note.classList.remove('show'),2200);
-  }
-});
-// 스크롤 메뉴 활성화
-const sections=[...document.querySelectorAll('main section')];
-const navs=[...document.querySelectorAll('.floating-nav .nav-btn[href^="#"]:not(.top)')];
-const observer=new IntersectionObserver(entries=>entries.forEach(e=>{if(e.isIntersecting)navs.forEach(n=>n.classList.toggle('active',n.getAttribute('href')==='#'+e.target.id));}),{rootMargin:'-35% 0px -55% 0px'});
-sections.forEach(s=>observer.observe(s));
-</script>
 
 </body></html>
 <style>
