@@ -1628,6 +1628,41 @@ document.addEventListener("click", function (event) {
 </script>
 
 
+
+<script>
+/* 포트폴리오 카테고리 탭 */
+document.addEventListener("DOMContentLoaded", function () {
+  const portfolio = document.getElementById("portfolio");
+  if (!portfolio) return;
+
+  const buttons = Array.from(portfolio.querySelectorAll(".tab-btn[data-cat]"));
+  const cards = Array.from(portfolio.querySelectorAll(".portfolio-card"));
+
+  function selectCategory(category) {
+    buttons.forEach(function (button) {
+      const active = button.dataset.cat === category;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", active ? "true" : "false");
+    });
+
+    cards.forEach(function (card) {
+      card.classList.toggle("hidden", !card.classList.contains(category));
+    });
+  }
+
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      selectCategory(button.dataset.cat);
+    });
+  });
+
+  const initial = buttons.find(function (button) {
+    return button.classList.contains("active");
+  });
+  selectCategory(initial ? initial.dataset.cat : "game");
+});
+</script>
+
 </body></html>
 <style>
 /* final layout cleanup */
