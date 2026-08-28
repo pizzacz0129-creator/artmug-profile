@@ -1155,6 +1155,7 @@ button,input,select,textarea{font:inherit}
 </div>
 <div class="calc-row"><label>함께 확인할 시점 수</label><select class="field" id="views"><option value="1">1시점</option><option value="2">2시점</option><option value="3">3시점</option><option value="4">4시점</option></select></div>
 <div class="calc-row"><label>영상 출연 인원</label><select class="field" id="people"><option value="1">1명</option><option value="2">2명</option><option value="3">3명</option><option value="4">4명</option><option value="5">5명 이상</option></select></div>
+<div class="calc-row"><label>원본 영상 길이</label><select class="field" id="sourceDuration"><option value="0" data-label="2시간 이하">2시간 이하</option><option value="5000" data-label="2시간 30분 이하">2시간 30분 이하</option><option value="10000" data-label="3시간 이하">3시간 이하</option><option value="15000" data-label="3시간 30분 이하">3시간 30분 이하</option><option value="20000" data-label="4시간 이하">4시간 이하</option><option value="inquiry" data-label="4시간 초과">4시간 초과 · 별도 문의</option></select></div>
 <div class="calc-note">※ 출연 인원이 시점 수보다 많을 경우, 초과 인원 1명당 3,000원이 추가됩니다.</div>
 <div class="total-bar">
 <div class="total-box"><span>총 예상 금액</span><strong id="totalPrice">0원</strong></div>
@@ -1240,6 +1241,9 @@ function calculate(){
   const mins=Number(document.getElementById('targetMinutes').value);
   const views=Number(document.getElementById('views').value);
   const people=Number(document.getElementById('people').value);
+  const sourceDuration=document.getElementById('sourceDuration');
+  const sourceFeeValue=sourceDuration.value;
+  const sourceLabel=sourceDuration.options[sourceDuration.selectedIndex].dataset.label;
   let total=0, rows=[];
 
   if(mins > 0){
@@ -1260,12 +1264,24 @@ function calculate(){
     rows.push(['합방 인원 추가',peopleFee]);
   }
 
-  document.getElementById('totalPrice').textContent=money(total);
+  const sourceNeedsInquiry=sourceFeeValue==='inquiry';
+  if(sourceNeedsInquiry){
+    rows.push(['원본 영상 길이 ('+sourceLabel+')','별도 문의']);
+  }else{
+    const sourceFee=Number(sourceFeeValue);
+    if(sourceFee){
+      total+=sourceFee;
+      rows.push(['원본 영상 길이 추가 ('+sourceLabel+')',sourceFee]);
+    }
+  }
+
+  document.getElementById('totalPrice').textContent=sourceNeedsInquiry ? '별도 문의' : money(total);
   document.getElementById('breakdown').innerHTML=rows.length
-    ? rows.map(r=>`<div class="b-row"><span>${r[0]}</span><strong>${money(r[1])}</strong></div>`).join('')
+    ? rows.map(r=>`<div class="b-row"><span>${r[0]}</span><strong>${typeof r[1]==='number' ? money(r[1]) : r[1]}</strong></div>`).join('')
     : '<div class="b-row"><span>희망 완성 길이 없음</span><strong>0원</strong></div>';
 
   document.getElementById('targetLength').value=mins>0 ? '희망 완성 길이 - '+mins+'분' : '희망 완성 길이 - 없음';
+  document.getElementById('sourceLength').value='원본 영상 길이 - '+sourceLabel;
 }
 document.querySelectorAll('#calculator select').forEach(el=>el.addEventListener('input',calculate));
 calculate();
