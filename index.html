@@ -1275,7 +1275,7 @@ function calculate(){
     }
   }
 
-  document.getElementById('totalPrice').textContent=sourceNeedsInquiry ? '별도 문의' : money(total);
+  document.getElementById('totalPrice').textContent=sourceNeedsInquiry ? money(total)+' + 별도 문의' : money(total);
   document.getElementById('breakdown').innerHTML=rows.length
     ? rows.map(r=>`<div class="b-row"><span>${r[0]}</span><strong>${typeof r[1]==='number' ? money(r[1]) : r[1]}</strong></div>`).join('')
     : '<div class="b-row"><span>희망 완성 길이 없음</span><strong>0원</strong></div>';
