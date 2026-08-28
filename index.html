@@ -534,26 +534,26 @@ button,input,select,textarea{font:inherit}
 }
 
 
-/* v25 align the gap between tabs to the video-grid centerline */
+/* portfolio tabs: 3 categories centered in one row */
 #portfolio .tabs{
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  column-gap:10px;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
   width:100%;
   margin:18px 0;
   transform:none;
 }
-#portfolio .tab-btn:first-child{
-  justify-self:end;
-}
+#portfolio .tab-btn:first-child,
 #portfolio .tab-btn:last-child{
-  justify-self:start;
+  justify-self:auto;
 }
 @media(max-width:900px){
   #portfolio .tabs{
-    display:grid;
-    grid-template-columns:1fr 1fr;
-    column-gap:10px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:10px;
     transform:none;
   }
 }
